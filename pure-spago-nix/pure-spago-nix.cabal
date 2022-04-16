@@ -1,0 +1,27 @@
+cabal-version: 2.4
+name:          pure-spago-nix
+version:       0.1
+author:        Rory Tyler Hayford
+build-type:    Simple
+
+executable pure-spago-nix
+  ghc-options:
+    -Wall -Wcompat -Wincomplete-uni-patterns -Wredundant-constraints
+    -Wmissing-export-lists -Wmissing-deriving-strategies -threaded
+    -rtsopts
+
+  default-language:   Haskell2010
+  default-extensions:
+    OverloadedStrings
+    GHC2021
+    NoFieldSelectors
+    OverloadedRecordDot
+
+  hs-source-dirs:     exe
+  main-is:            Main.hs
+  -- other-modules:
+  build-depends:
+    , base
+    , dhall
+    , prettyprinter
+    , text
