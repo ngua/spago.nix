@@ -2,17 +2,19 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLabels #-}
 
--- | Parses Spago-style `packages.dhall` files in a (very) crude way. Currently
--- support imports with hashes (only official Purescript package sets) and
--- records in `let`-bindings
+{- | Parses Spago-style `packages.dhall` files in a (very) crude way. Currently
+ support imports with hashes (only official Purescript package sets) and
+ records in `let`-bindings
+-}
 module Dependencies (
   gatherDependenciesIO,
   gatherDependencies,
 ) where
 
-import Control.Lens (Identity (runIdentity), (%=))
+import Control.Lens (at, (%=), (?=))
 import Control.Monad (void, (<=<))
 import Control.Monad.Except (MonadError (throwError), runExceptT)
+import Control.Monad.Identity (Identity (runIdentity))
 import Control.Monad.State.Strict (MonadState, execStateT)
 import Data.Kind (Type)
 import Data.Sequence ((|>))
@@ -24,7 +26,7 @@ import Dhall.Map qualified
 import Dhall.Parser qualified
 import System.Exit (die)
 import Types (
-  SpagoAddition (SpagoAddition, name, repo, version),
+  SpagoAddition (SpagoAddition),
   SpagoDependencies,
   SpagoImport (SpagoImport, path, sha256),
   emptyDependencies,
@@ -76,17 +78,19 @@ gatherDependencies' = \case
   Dhall.Embed (Dhall.Import {}) -> throwError "Unsupported import type"
   Dhall.RecordLit m -> void . flip Dhall.Map.traverseWithKey m $
     \name record -> do
-      (repo, version) <- getAdditionInfo record
-      #additions %= (|> SpagoAddition {name, repo, version})
+      addition <- getAdditionInfo record
+      #additions . at name ?= addition
   _ -> pure ()
 
 getAdditionInfo ::
   forall (m :: Type -> Type).
   MonadError Text m =>
   Dhall.RecordField Void Dhall.Import ->
-  m (Text, Text)
+  m SpagoAddition
 getAdditionInfo (Dhall.RecordField {Dhall.recordFieldValue = v}) = case v of
-  Dhall.RecordLit m -> (,) <$> lookupField "repo" <*> lookupField "version"
+  Dhall.RecordLit m ->
+    SpagoAddition
+      <$> lookupField "repo" <*> lookupField "version"
     where
       lookupField :: Text -> m Text
       lookupField =

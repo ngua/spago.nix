@@ -3,7 +3,7 @@
 module Types (
   SpagoDependencies (SpagoDependencies, imports),
   SpagoImport (SpagoImport, path, sha256),
-  SpagoAddition (SpagoAddition, name, repo, version),
+  SpagoAddition (SpagoAddition, repo, version),
   emptyDependencies,
   NixExpr (..),
   prettyNixExpr,
@@ -26,7 +26,7 @@ import Prettyprinter qualified
 -}
 data SpagoDependencies = SpagoDependencies
   { imports :: Seq SpagoImport
-  , additions :: Seq SpagoAddition
+  , additions :: Map Text SpagoAddition
   }
   deriving stock (Show, Eq, Generic)
 
@@ -46,8 +46,7 @@ data SpagoImport = SpagoImport
  hash provided by the user
 -}
 data SpagoAddition = SpagoAddition
-  { name :: Text
-  , repo :: Text
+  { repo :: Text
   , version :: Text
   }
   deriving stock (Show, Eq, Generic)
