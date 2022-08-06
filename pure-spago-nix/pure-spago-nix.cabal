@@ -12,6 +12,7 @@ executable pure-spago-nix
 
   default-language:   Haskell2010
   default-extensions:
+    DerivingStrategies
     OverloadedStrings
     GHC2021
     NoFieldSelectors
@@ -19,9 +20,17 @@ executable pure-spago-nix
 
   hs-source-dirs:     exe
   main-is:            Main.hs
-  -- other-modules:
+  other-modules:
+    Dependencies
+    Types
+
   build-depends:
     , base
+    , containers
     , dhall
+    , generic-lens
+    , lens
+    , mtl
     , prettyprinter
     , text
+    , transformers

@@ -8,7 +8,11 @@ let additions =
         , repo = "https://github.com/Risto-Stevcev/purescript-properties.git"
         , version = "v0.2.0"
         }
+      , lattice =
+        { dependencies = [ "prelude", "console", "properties" ]
+        , repo = "https://github.com/Risto-Stevcev/purescript-lattice.git"
+        , version = "v0.3.0"
+        }
       }
 
 in  upstream // additions
-
