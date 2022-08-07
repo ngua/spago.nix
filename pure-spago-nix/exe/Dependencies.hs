@@ -28,7 +28,7 @@ import Dhall.Crypto qualified
 import Dhall.Map qualified
 import Dhall.Parser qualified
 import Types (
-  NixExpr (NixAttrSet, NixList, NixString),
+  NixExpr (NixAttrSet, NixString),
   SpagoAddition (SpagoAddition, repo, version),
   SpagoDependencies (additions, imports),
   SpagoDependencyError (
@@ -70,7 +70,7 @@ dependenciesToNix deps = do
   pure $
     NixAttrSet $
       Map.fromList
-        [ ("upstream", NixList . pure $ upstreamToAttrSet upstream)
+        [ ("upstream", upstreamToAttrSet upstream)
         , ("additions", NixAttrSet $ additionToAttrSet <$> deps.additions)
         ]
   where
