@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 
 module Types (
-  SpagoDependencies (SpagoDependencies, imports),
+  SpagoDependencies (SpagoDependencies, imports, additions),
   SpagoImport (SpagoImport, path, sha256),
   SpagoAddition (SpagoAddition, repo, version),
   emptyDependencies,

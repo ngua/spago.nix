@@ -7,59 +7,107 @@
  records in `let`-bindings
 -}
 module Dependencies (
-  gatherDependenciesIO,
-  gatherDependencies,
+  extractDependenciesIO,
+  extractDependencies,
 ) where
 
-import Control.Lens (at, (%=), (?=))
+import Control.Exception (IOException)
+import Control.Lens (at, (%=), (?=), (^.), (^?), _head)
 import Control.Monad (void, (<=<))
-import Control.Monad.Except (MonadError (throwError), runExceptT)
+import Control.Monad.Except (MonadError (throwError), liftEither, runExceptT)
 import Control.Monad.Identity (Identity (runIdentity))
 import Control.Monad.State.Strict (MonadState, execStateT)
+import Data.Bifunctor (first)
 import Data.Kind (Type)
+import Data.Map qualified as Map
 import Data.Sequence ((|>))
 import Data.Text (Text)
 import Data.Text.IO qualified
+import Data.Text.Lens (packed)
 import Data.Void (Void)
 import Dhall.Core qualified as Dhall
+import Dhall.Crypto qualified
 import Dhall.Map qualified
 import Dhall.Parser qualified
-import System.Exit (die)
 import Types (
-  SpagoAddition (SpagoAddition),
-  SpagoDependencies,
+  NixExpr (NixAttrSet, NixList, NixString),
+  SpagoAddition (SpagoAddition, repo, version),
+  SpagoDependencies (additions, imports),
   SpagoImport (SpagoImport, path, sha256),
   emptyDependencies,
  )
 
-gatherDependenciesIO :: FilePath -> IO (Either Text SpagoDependencies)
-gatherDependenciesIO =
-  runGatherDependencies
-    <=< parseOrExit
-    <=< Data.Text.IO.readFile
+extractDependenciesIO :: FilePath -> IO NixExpr
+extractDependenciesIO fp = do
+  text <- Data.Text.IO.readFile fp
+  dhall <-
+    liftEither . first toIOException $
+      Dhall.Parser.exprFromText "(spago-dependencies)" text
+  deps <-
+    liftEither . first (toIOException @Text)
+      =<< runExtractDependencies dhall
+  liftEither . first (toIOException @Text) $ dependenciesToNix deps
   where
-    parseOrExit :: Text -> IO (Dhall.Expr Dhall.Parser.Src Dhall.Import)
-    parseOrExit =
-      either (die . show) pure
-        . Dhall.Parser.exprFromText "(spago-dependencies)"
+    toIOException :: forall (a :: Type). Show a => a -> IOException
+    toIOException = userError . show
 
-gatherDependencies ::
+dependenciesToNix ::
+  forall (m :: Type -> Type).
+  MonadError Text m =>
+  SpagoDependencies ->
+  m NixExpr
+dependenciesToNix deps = do
+  -- Although we can extract any number of imports, we really only care about
+  -- the first one (this should be an official Purescript package set)
+  --
+  -- In the future, we can add support for multiple remote imports
+  upstream <-
+    maybe (throwError "No upstream specified") pure $
+      deps.imports ^? _head
+  pure $
+    NixAttrSet $
+      Map.fromList
+        [ ("upstream", NixList . pure $ upstreamToAttrSet upstream)
+        , ("additions", NixAttrSet $ additionToAttrSet <$> deps.additions)
+        ]
+  where
+    upstreamToAttrSet :: SpagoImport -> NixExpr
+    upstreamToAttrSet imp =
+      NixAttrSet $
+        Map.fromList
+          [ ("path", NixString imp.path)
+          ,
+            ( "sha256"
+            , NixString $
+                Dhall.Crypto.toString imp.sha256 ^. packed
+            )
+          ]
+
+    additionToAttrSet :: SpagoAddition -> NixExpr
+    additionToAttrSet add =
+      NixAttrSet $
+        Map.fromList
+          [ ("repo", NixString add.repo)
+          , ("version", NixString add.version)
+          ]
+
+extractDependencies ::
   Dhall.Expr Dhall.Parser.Src Dhall.Import ->
   Either Text SpagoDependencies
-gatherDependencies = runIdentity . runGatherDependencies
+extractDependencies = runIdentity . runExtractDependencies
 
-runGatherDependencies ::
+runExtractDependencies ::
   forall (m :: Type -> Type).
   Monad m =>
   Dhall.Expr Dhall.Parser.Src Dhall.Import ->
   m (Either Text SpagoDependencies)
-runGatherDependencies =
+runExtractDependencies =
   runExceptT
     . flip execStateT emptyDependencies
-    . gatherDependencies'
+    . extractDependencies'
     . Dhall.denote
 
-gatherDependencies' ::
+extractDependencies' ::
   forall (m :: Type -> Type).
   ( MonadState SpagoDependencies m
   , -- TODO use a better/specific error type
@@ -67,9 +115,9 @@ gatherDependencies' ::
   ) =>
   Dhall.Expr Void Dhall.Import ->
   m ()
-gatherDependencies' = \case
+extractDependencies' = \case
   Dhall.Let (Dhall.Binding {Dhall.value = v}) expr ->
-    gatherDependencies' v *> gatherDependencies' expr
+    extractDependencies' v *> extractDependencies' expr
   Dhall.Embed
     (Dhall.Import (Dhall.ImportHashed msha256 (Dhall.Remote remote)) _) -> do
       sha256 <- maybe (throwError "Imports must include hash") pure msha256
