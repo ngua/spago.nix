@@ -15,7 +15,12 @@
       compiler = "ghc924";
       nixpkgsFor = system: import nixpkgs {
         inherit system;
-        overlays = nixpkgs.lib.attrValues self.overlays;
+        overlays = nixpkgs.lib.attrValues self.overlays ++
+          [
+            (_: _: {
+              pure-spago-nix = self.packages.${system}.pure-spago-nix;
+            })
+          ];
       };
       hsPackageName = "pure-spago-nix";
       hsProjectFor = system: { returnShellEnv ? false }:
@@ -44,6 +49,7 @@
                   cabal-install
                   hlint
                   pkgs.nixpkgs-fmt
+                  pkgs.pure-spago-nix
                 ]);
             })
       );
