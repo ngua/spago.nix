@@ -8,14 +8,12 @@
 -}
 module Dependencies (
   extractDependenciesIO,
-  extractDependencies,
 ) where
 
-import Control.Exception (IOException)
+import Control.Exception (Exception (displayException), IOException)
 import Control.Lens (at, (%=), (?=), (^.), (^?), _head)
 import Control.Monad (void, (<=<))
 import Control.Monad.Except (MonadError (throwError), liftEither, runExceptT)
-import Control.Monad.Identity (Identity (runIdentity))
 import Control.Monad.State.Strict (MonadState, execStateT)
 import Data.Bifunctor (first)
 import Data.Kind (Type)
@@ -33,27 +31,32 @@ import Types (
   NixExpr (NixAttrSet, NixList, NixString),
   SpagoAddition (SpagoAddition, repo, version),
   SpagoDependencies (additions, imports),
+  SpagoDependencyError (
+    MissingImportHash,
+    MissingRecordField,
+    MissingUpstream,
+    UnsupportedRecord,
+    UnsupportedRemoteImport
+  ),
   SpagoImport (SpagoImport, path, sha256),
   emptyDependencies,
  )
 
 extractDependenciesIO :: FilePath -> IO NixExpr
-extractDependenciesIO fp = do
-  text <- Data.Text.IO.readFile fp
-  dhall <-
-    liftEither . first toIOException $
-      Dhall.Parser.exprFromText "(spago-dependencies)" text
-  deps <-
-    liftEither . first (toIOException @Text)
-      =<< runExtractDependencies dhall
-  liftEither . first (toIOException @Text) $ dependenciesToNix deps
+extractDependenciesIO =
+  liftEither . first toIOException . dependenciesToNix
+    <=< liftEither . first toIOException
+    <=< runExtractDependencies
+    <=< liftEither . first (userError . show)
+      . Dhall.Parser.exprFromText "(spago-dependencies)"
+    <=< Data.Text.IO.readFile
   where
-    toIOException :: forall (a :: Type). Show a => a -> IOException
-    toIOException = userError . show
+    toIOException :: forall (a :: Type). Exception a => a -> IOException
+    toIOException = userError . displayException
 
 dependenciesToNix ::
   forall (m :: Type -> Type).
-  MonadError Text m =>
+  MonadError SpagoDependencyError m =>
   SpagoDependencies ->
   m NixExpr
 dependenciesToNix deps = do
@@ -62,7 +65,7 @@ dependenciesToNix deps = do
   --
   -- In the future, we can add support for multiple remote imports
   upstream <-
-    maybe (throwError "No upstream specified") pure $
+    maybe (throwError MissingUpstream) pure $
       deps.imports ^? _head
   pure $
     NixAttrSet $
@@ -91,16 +94,11 @@ dependenciesToNix deps = do
           , ("version", NixString add.version)
           ]
 
-extractDependencies ::
-  Dhall.Expr Dhall.Parser.Src Dhall.Import ->
-  Either Text SpagoDependencies
-extractDependencies = runIdentity . runExtractDependencies
-
 runExtractDependencies ::
   forall (m :: Type -> Type).
   Monad m =>
   Dhall.Expr Dhall.Parser.Src Dhall.Import ->
-  m (Either Text SpagoDependencies)
+  m (Either SpagoDependencyError SpagoDependencies)
 runExtractDependencies =
   runExceptT
     . flip execStateT emptyDependencies
@@ -110,8 +108,7 @@ runExtractDependencies =
 extractDependencies' ::
   forall (m :: Type -> Type).
   ( MonadState SpagoDependencies m
-  , -- TODO use a better/specific error type
-    MonadError Text m
+  , MonadError SpagoDependencyError m
   ) =>
   Dhall.Expr Void Dhall.Import ->
   m ()
@@ -120,10 +117,10 @@ extractDependencies' = \case
     extractDependencies' v *> extractDependencies' expr
   Dhall.Embed
     (Dhall.Import (Dhall.ImportHashed msha256 (Dhall.Remote remote)) _) -> do
-      sha256 <- maybe (throwError "Imports must include hash") pure msha256
+      sha256 <- maybe (throwError MissingImportHash) pure msha256
       path <- getRemotePath remote
       #imports %= (|> SpagoImport {sha256, path})
-  Dhall.Embed (Dhall.Import {}) -> throwError "Unsupported import type"
+  Dhall.Embed (Dhall.Import {}) -> throwError UnsupportedRemoteImport
   Dhall.RecordLit m -> void . flip Dhall.Map.traverseWithKey m $
     \name record -> do
       addition <- getAdditionInfo record
@@ -132,7 +129,7 @@ extractDependencies' = \case
 
 getAdditionInfo ::
   forall (m :: Type -> Type).
-  MonadError Text m =>
+  MonadError SpagoDependencyError m =>
   Dhall.RecordField Void Dhall.Import ->
   m SpagoAddition
 getAdditionInfo (Dhall.RecordField {Dhall.recordFieldValue = v}) = case v of
@@ -143,23 +140,23 @@ getAdditionInfo (Dhall.RecordField {Dhall.recordFieldValue = v}) = case v of
       lookupField :: Text -> m Text
       lookupField =
         getFieldValue
-          <=< maybe (throwError "Missing record field") pure
+          <=< maybe (throwError MissingRecordField) pure
             . flip Dhall.Map.lookup m
 
       getFieldValue :: Dhall.RecordField Void Dhall.Import -> m Text
       getFieldValue (Dhall.RecordField {Dhall.recordFieldValue = v'}) =
         case v' of
           Dhall.TextLit (Dhall.Chunks [] t) -> pure t
-          _ -> throwError "Unsupported field type"
-  _ -> throwError "Unsupported record type"
+          _ -> throwError UnsupportedRecord
+  _ -> throwError UnsupportedRecord
 
 getRemotePath ::
   forall (m :: Type -> Type).
-  MonadError Text m =>
+  MonadError SpagoDependencyError m =>
   Dhall.URL ->
   m Text
 -- We only care about the last part of the remote URL, e.g. `psc-0.14.5-20211116`
 -- (`Directory.components` lists them backwards)
 getRemotePath
   (Dhall.URL _ _ (Dhall.File (Dhall.Directory (x : _)) _) _ _) = pure x
-getRemotePath _ = throwError "Unsupported remote"
+getRemotePath _ = throwError UnsupportedRemoteImport

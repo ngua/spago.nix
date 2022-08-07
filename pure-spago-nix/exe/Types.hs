@@ -7,8 +7,10 @@ module Types (
   emptyDependencies,
   NixExpr (..),
   prettyNixExpr,
+  SpagoDependencyError (..),
 ) where
 
+import Control.Exception (Exception (displayException))
 import Data.Generics.Labels ()
 import Data.Kind (Type)
 import Data.Map qualified as Map
@@ -20,6 +22,31 @@ import GHC.Exts (toList)
 import GHC.Generics (Generic)
 import Prettyprinter ((<+>))
 import Prettyprinter qualified
+
+data SpagoDependencyError
+  = -- | The user hasn't specified an upstream package set
+    MissingUpstream
+  | -- | The import hash wasn't provided
+    MissingImportHash
+  | -- | A record field is missing for a 'SpagoAddition'
+    MissingRecordField
+  | -- | An extra record field has been provided for a 'SpagoAddition'
+    ExtraRecordField
+  | -- | The record doesn't conform to the expected 'SpagoAddition' format
+    UnsupportedRecord
+  | -- | The remote does not conform to the standard Spago package set format
+    UnsupportedRemoteImport
+  deriving stock (Show, Eq, Generic)
+
+instance Exception SpagoDependencyError where
+  displayException = \case
+    MissingUpstream -> "No upstream specified"
+    MissingImportHash -> "No sha256 hash has been provided for the import"
+    MissingRecordField -> "`repo` or `version` missing"
+    ExtraRecordField -> "Unexpected record field provided for `SpagoAddition`"
+    UnsupportedRecord -> "Record does not conform to `SpagoAddition` format"
+    UnsupportedRemoteImport ->
+      "Only official Purescript package sets are supported"
 
 {- | The dependencies declared in `packages.dhall`. Includes Dhall imports
  as well as additional git dependencies
@@ -83,6 +110,6 @@ prettyElems (open, close) f xs =
   Prettyprinter.sep
     [ Prettyprinter.nest 2
         . Prettyprinter.sep
-        $ [open] <> (f <$> xs)
+        $ open : (f <$> xs)
     , close
     ]
