@@ -1,13 +1,22 @@
 {-# LANGUAGE LambdaCase #-}
 
 module Types (
-  SpagoDependencies (SpagoDependencies, imports, additions),
-  SpagoImport (SpagoImport, path, sha256),
+  Options (ExtractDependencies, GenerateUpstream),
+  NixExpr (NixAttrSet, NixList, NixString),
   SpagoAddition (SpagoAddition, repo, version),
+  SpagoImport (SpagoImport, path, sha256),
+  SpagoDependencies (SpagoDependencies, imports, additions),
+  SpagoDependencyError (
+    MissingUpstream,
+    MissingImportHash,
+    MissingRecordField,
+    ExtraRecordField,
+    UnsupportedRecord,
+    UnsupportedRemoteImport
+  ),
   emptyDependencies,
-  NixExpr (..),
   prettyNixExpr,
-  SpagoDependencyError (..),
+  options,
 ) where
 
 import Control.Exception (Exception (displayException))
@@ -20,8 +29,47 @@ import Data.Text (Text)
 import Dhall.Crypto (SHA256Digest)
 import GHC.Exts (toList)
 import GHC.Generics (Generic)
+import Options.Applicative qualified as Options
 import Prettyprinter ((<+>))
 import Prettyprinter qualified
+
+data Options
+  = ExtractDependencies FilePath
+  | GenerateUpstream Text
+  deriving stock (Show, Eq, Generic)
+
+options :: Options.ParserInfo Options
+options =
+  Options.info (Options.helper <*> optionsP) $
+    Options.fullDesc
+      <> Options.progDesc "Generate Nix packages from Spago configuration"
+      <> Options.header "pure-spago-nix"
+
+optionsP :: Options.Parser Options
+optionsP =
+  Options.hsubparser $
+    Options.command
+      "extract"
+      ( Options.info
+          (Options.helper <*> extractCommand)
+          (Options.progDesc "Extract dependencies from `packages.dhall`")
+      )
+      <> Options.command
+        "generate"
+        ( Options.info
+            (Options.helper <*> generateCommand)
+            (Options.progDesc "Generate package set from Purescript upstream")
+        )
+
+generateCommand :: Options.Parser Options
+generateCommand =
+  GenerateUpstream
+    <$> Options.argument Options.str (Options.metavar "PACKAGE-SET")
+
+extractCommand :: Options.Parser Options
+extractCommand =
+  ExtractDependencies
+    <$> Options.argument Options.str (Options.metavar "FILE")
 
 data SpagoDependencyError
   = -- | The user hasn't specified an upstream package set
@@ -108,8 +156,6 @@ prettyElems ::
   Prettyprinter.Doc ann
 prettyElems (open, close) f xs =
   Prettyprinter.sep
-    [ Prettyprinter.nest 2
-        . Prettyprinter.sep
-        $ open : (f <$> xs)
+    [ Prettyprinter.nest 2 . Prettyprinter.sep $ open : (f <$> xs)
     , close
     ]

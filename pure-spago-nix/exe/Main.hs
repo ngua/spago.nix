@@ -3,17 +3,28 @@
 module Main (main) where
 
 import Dependencies (extractDependenciesIO)
+import Options.Applicative qualified as Options
 import Prettyprinter.Util qualified
-import System.Environment (getArgs)
-import Types (prettyNixExpr)
+import Types (
+  Options (ExtractDependencies, GenerateUpstream),
+  options,
+  prettyNixExpr,
+ )
 
--- | Extracts the dependencies declared in a Dhall file, converts them to a
--- Nix expression, then prints the result to stdout
 main :: IO ()
-main =
-  getArgs >>= \case
-    fp : _ ->
-      Prettyprinter.Util.putDocW 80
-        . prettyNixExpr
-        =<< extractDependenciesIO fp
-    _ -> putStrLn "Usage: pure-spago-nix <PATH>"
+main = run =<< Options.customExecParser prefs options
+  where
+    prefs :: Options.ParserPrefs
+    prefs =
+      Options.prefs $
+        Options.showHelpOnEmpty <> Options.showHelpOnError
+
+run :: Options -> IO ()
+run = \case
+  -- Extracts the dependencies declared in a Dhall config file, converts them
+  -- to a Nix expression, then prints the result to stdout
+  ExtractDependencies fp ->
+    Prettyprinter.Util.putDocW 80 . prettyNixExpr
+      =<< extractDependenciesIO fp
+  -- TODO
+  GenerateUpstream _ -> pure ()
