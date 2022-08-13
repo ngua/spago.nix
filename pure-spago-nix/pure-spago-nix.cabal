@@ -22,10 +22,13 @@ executable pure-spago-nix
   main-is:            Main.hs
   other-modules:
     Dependencies
+    Upstreams
     Types
 
   build-depends:
+    , async
     , base
+    , bytestring
     , containers
     , dhall
     , generic-lens
@@ -35,3 +38,4 @@ executable pure-spago-nix
     , prettyprinter
     , text
     , transformers
+    , typed-process

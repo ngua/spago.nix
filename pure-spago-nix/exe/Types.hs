@@ -20,6 +20,7 @@ module Types (
 ) where
 
 import Control.Exception (Exception (displayException))
+import Data.ByteString.Lazy qualified as Lazy
 import Data.Generics.Labels ()
 import Data.Kind (Type)
 import Data.Map qualified as Map
@@ -35,7 +36,7 @@ import Prettyprinter qualified
 
 data Options
   = ExtractDependencies FilePath
-  | GenerateUpstream Text
+  | GenerateUpstream Lazy.ByteString
   deriving stock (Show, Eq, Generic)
 
 options :: Options.ParserInfo Options

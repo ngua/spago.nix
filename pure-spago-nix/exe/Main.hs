@@ -10,6 +10,7 @@ import Types (
   options,
   prettyNixExpr,
  )
+import Upstreams (generateUpstreamIO)
 
 main :: IO ()
 main = run =<< Options.customExecParser prefs options
@@ -21,10 +22,9 @@ main = run =<< Options.customExecParser prefs options
 
 run :: Options -> IO ()
 run = \case
+  GenerateUpstream pkgset -> generateUpstreamIO pkgset
   -- Extracts the dependencies declared in a Dhall config file, converts them
   -- to a Nix expression, then prints the result to stdout
   ExtractDependencies fp ->
     Prettyprinter.Util.putDocW 80 . prettyNixExpr
       =<< extractDependenciesIO fp
-  -- TODO
-  GenerateUpstream _ -> pure ()

@@ -48,8 +48,11 @@
                   haskell-language-server
                   cabal-install
                   hlint
+                  pkgs.wget
                   pkgs.nixpkgs-fmt
                   pkgs.pure-spago-nix
+                  pkgs.dhall-nix
+                  pkgs.nix-prefetch-git
                 ]);
             })
       );
