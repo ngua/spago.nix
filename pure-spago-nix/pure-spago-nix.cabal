@@ -26,6 +26,7 @@ executable pure-spago-nix
     Types
 
   build-depends:
+    , aeson
     , async
     , base
     , bytestring
