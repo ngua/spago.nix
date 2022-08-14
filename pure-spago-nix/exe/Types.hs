@@ -135,19 +135,21 @@ data NixExpr
   = NixList (Seq NixExpr)
   | NixAttrSet (Map Text NixExpr)
   | NixString Text
+  | NixFunApp Text NixExpr
   deriving stock (Show, Eq, Generic)
 
 prettyNixExpr :: forall (ann :: Type). NixExpr -> Prettyprinter.Doc ann
 prettyNixExpr = \case
-  NixString t -> Prettyprinter.dquotes $ Prettyprinter.pretty t
+  NixFunApp name arg -> Prettyprinter.pretty name <+> prettyNixExpr arg
+  NixString t -> qtext t
   NixList nexprs -> prettyElems ("[", "]") prettyNixExpr $ toList nexprs
   NixAttrSet attrs -> prettyElems ("{", "}") f $ Map.toList attrs
     where
       f :: (Text, NixExpr) -> Prettyprinter.Doc ann
       f (k, nexpr) =
-        Prettyprinter.pretty k
-          <+> "="
-          <+> prettyNixExpr nexpr <> ";"
+        qtext k -- It's safer to always quote the text
+          <+> Prettyprinter.equals
+          <+> prettyNixExpr nexpr <> Prettyprinter.semi
 
 prettyElems ::
   forall (a :: Type) (ann :: Type).
@@ -160,3 +162,6 @@ prettyElems (open, close) f xs =
     [ Prettyprinter.nest 2 . Prettyprinter.sep $ open : (f <$> xs)
     , close
     ]
+
+qtext :: forall (ann :: Type). Text -> Prettyprinter.Doc ann
+qtext = Prettyprinter.dquotes . Prettyprinter.pretty
