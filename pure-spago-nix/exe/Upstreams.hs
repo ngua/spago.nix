@@ -31,6 +31,8 @@ import Data.Void (Void)
 import Dhall.Core qualified as Dhall
 import Dhall.Map qualified
 import Dhall.Parser qualified
+import Network.HTTP.Client qualified as Client
+import Network.HTTP.Client.TLS qualified as Client.Tls
 import Prettyprinter qualified
 import Prettyprinter.Util qualified
 import System.Exit (ExitCode (ExitFailure, ExitSuccess))
@@ -46,11 +48,9 @@ import Types (
 
 generateUpstreamIO :: Lazy.Char8.ByteString -> IO ()
 generateUpstreamIO pkgset = do
-  -- `http-client` could be used instead, but this is easier/more convenient
-  raw <-
-    checkExitCode
-      =<< Process.Typed.readProcessStdout
-        (Process.Typed.proc "wget" ["-qO-", mkUrl pkgset])
+  manager <- Client.Tls.newTlsManager
+  req <- Client.parseRequest $ mkUrl pkgset
+  raw <- Client.responseBody <$> Client.httpLbs req manager
   dhall <-
     liftEither . bimap (userError . show) (Dhall.denote @_ @_ @Void)
       . Dhall.Parser.exprFromText "(upstream)"
