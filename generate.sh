@@ -114,10 +114,17 @@ declare upstreams=(
     psc-0.14.0
 )
 
-for pkgs in "${upstreams[@]}"; do
-    path="package-sets/$pkgs.nix"
-    echo "Creating $path"
+mkdir -p package-sets
+
+len="${#upstreams[@]}"
+
+for i in "${!upstreams[@]}"; do
+    upstream="${upstreams[$i]}"
+    path="package-sets/$upstream.nix"
     if [[ ! -f "$path" ]]; then
-        pure-spago-nix generate "$pkgs" >"$path"
+        idx=$((1 + $i))
+        echo -n "[$idx / $len] Creating $path..."
+        pure-spago-nix generate "$upstream" >"$path"
+        echo " done"
     fi
 done
