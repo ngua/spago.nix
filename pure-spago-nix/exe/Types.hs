@@ -2,7 +2,7 @@
 
 module Types (
   Options (ExtractDependencies, GenerateUpstream),
-  NixExpr (NixAttrSet, NixList, NixString),
+  NixExpr (NixAttrSet, NixList, NixString, NixFunApp),
   SpagoAddition (SpagoAddition, repo, version),
   SpagoImport (SpagoImport, path, sha256),
   SpagoDependencies (SpagoDependencies, imports, additions),
