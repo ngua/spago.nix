@@ -60,8 +60,8 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1660994579,
-        "narHash": "sha256-JZnuhsFPJ4G+vQMTwPcqm8TyFOAd7f4zjPLktmNKq2o=",
+        "lastModified": 1661001809,
+        "narHash": "sha256-T6oCNQFjYfxzHjGYzUETPVh8XIWWZWDqaXqgTU5VeHg=",
         "type": "git",
         "url": "file:///home/rory/projects/spago.nix"
       },

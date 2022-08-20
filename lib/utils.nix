@@ -19,17 +19,16 @@ let
   getGlob = pkg: ''".spago/${pkg.name}/${pkg.version}/src/**/*.purs"'';
 in
 {
-  install = spagoPkgs: pkgs.writeShellApplication
-    {
-      name = "install-spago-pkgs";
-      runtimeInputs = [ ];
-      text = ''
-        set -e
-        echo installing dependencies...
-        ${builtins.toString
-          (builtins.map cpPackage (builtins.attrValues spagoPkgs))
-         }
-        echo "echo done."
-      '';
-    };
+  install = spagoPkgs: pkgs.writeShellApplication {
+    name = "install-spago-pkgs";
+    runtimeInputs = [ ];
+    text = ''
+      set -e
+      echo installing dependencies...
+      ${builtins.toString
+        (builtins.map cpPackage (builtins.attrValues spagoPkgs))
+       }
+      echo "echo done."
+    '';
+  };
 }

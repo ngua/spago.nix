@@ -5,10 +5,12 @@ let
 
   eps = import inputs.easy-purescript-nix { inherit pkgs; };
 
+  utils = import ./utils.nix { inherit pkgs; };
+
   # Generate the project specification from a `packages.dhall` through the
   # magic of IFD.
   #
-  # This will contain an `upstream` package set (e.g. `psc-0.13.3`) and a list
+  # This will contain an `upstream` package set (e.g. `psc-0.15.3`) and a list
   # of `additional` dependencies. We can then import it to generate the various
   # derivations to build the project, create a suitable `devShell`, etc...
   projectPlanFor = name: packages: import
@@ -36,15 +38,37 @@ let
     { name
     , src
     , shell ? { }
-    , packages ? /. + src + "/packages.dhall"
+      # Paths to configuration files describing the build: `packages.dhall`,
+      # etc... These can be derived from the `src`, but can also be explicitly
+      # passed
+    , buildConfig ? {
+        packagesDhall = /. + src + "/packages.dhall";
+      }
     , ...
     }:
     let
-      plan = projectPlanFor name packages;
+      plan = projectPlanFor name buildConfig.packagesDhall;
+
+      # Get the upstream package set
+      upstream = import
+        (../package-sets + "/${plan.upstream.path}.nix")
+        { inherit pkgs; };
+
+      # TODO Add the `additional` as well later
+      spagoPkgs = upstream;
+
+      installed = pkgs.runCommand
+        "install-spago-deps"
+        {
+          nativeBuildInputs = [ (utils.install spagoPkgs) ];
+        }
+        ''
+          mkdir $out && cd $out
+          install-spago-pkgs
+        '';
+
       # Make a `devShell` from the options provided via `spagoProject.shell`,
       # all of which have default options
-      #
-      # TODO
       mkDevShell =
         {
           # List of purescript development tools available from
@@ -52,21 +76,38 @@ let
           tools ? { }
           # Extra packages to include in the development environment
         , packages ? [ ]
-        }: pkgs.mkShell {
-          inherit packages;
-          nativeBuildInputs =
-            let
-              # First convert the compiler version from above into a format
-              # suitable for importing from `easy-purescript-nix`
-              compilerVersion = builtins.replaceStrings
-                [ "." ] [ "_" ]
-                (compilerVersionFor plan);
-            in
-            [
+          # If `true`, the Spago packages will be installed in `./.spago`
+        , install ? true
+        , shellHook ? ""
+        }:
+        let
+          # First convert the compiler version from above into a format
+          # suitable for importing from `easy-purescript-nix`
+          compilerVersion = builtins.replaceStrings
+            [ "." ] [ "_" ]
+            (compilerVersionFor plan);
+        in
+        pkgs.mkShell
+          {
+            inherit packages;
+            nativeBuildInputs = [
               # Get the correct version of the `purs` compiler
               eps."purs-${compilerVersion}"
+              eps.spago
             ];
-        };
+            shellHook =
+              (
+                lib.optionalString install
+                  ''
+                    dest=./.spago
+                    if [ -L "$dest" ]; then
+                      unlink "$dest"
+                    fi
+                    ln -s ${installed}/.spago ./.spago
+                  ''
+              )
+              + shellHook;
+          };
     in
     rec {
       devShell = mkDevShell shell;

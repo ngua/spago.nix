@@ -20,6 +20,9 @@
       };
       projectFor = pkgs: pkgs.spago-nix.spagoProject {
         name = "spago-nix-example";
+        buildConfig = {
+          packagesDhall = ./packages.dhall;
+        };
         src = ./.;
         shell = { };
       };

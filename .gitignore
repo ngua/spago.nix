@@ -6,3 +6,4 @@ dist-*
 *.hp
 .envrc
 .direnv
+**/.spago
