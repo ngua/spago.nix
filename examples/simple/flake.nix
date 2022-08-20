@@ -4,8 +4,19 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     # TODO use remote once it exists
     spago-nix.url = "git+file:///home/rory/projects/spago.nix";
+
+    # For use with the `sha256map` to create a project
+    lattice = {
+      url = "github:Risto-Stevcev/purescript-lattice/v0.3.0";
+      flake = false;
+    };
+    properties = {
+      url = "github:Risto-Stevcev/purescript-properties/v0.2.0";
+      flake = false;
+    };
+
   };
-  outputs = { self, nixpkgs, spago-nix, ... }:
+  outputs = { self, nixpkgs, spago-nix, ... }@inputs:
     let
       supportedSystems = [
         "x86_64-linux"
@@ -20,11 +31,21 @@
       };
       projectFor = pkgs: pkgs.spago-nix.spagoProject {
         name = "spago-nix-example";
+        src = ./.;
+        shell = { };
         buildConfig = {
           packagesDhall = ./packages.dhall;
         };
-        src = ./.;
-        shell = { };
+        sha256map = {
+          lattice = {
+            rev = inputs.lattice.rev;
+            sha256 = inputs.lattice.narHash;
+          };
+          properties = {
+            rev = inputs.properties.rev;
+            sha256 = inputs.properties.narHash;
+          };
+        };
       };
       flakeFor = system: (projectFor (nixpkgsFor system)).flake;
     in

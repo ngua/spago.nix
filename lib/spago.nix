@@ -37,6 +37,25 @@ let
   spagoProject =
     { name
     , src
+      # A set mapping dependency names to the specific revision and sha256 hash
+      # of its sources. This is required as `packages.dhall` does not
+      # allow you to specify the hashes of git dependencies. You can use
+      # `nix-prefetch-git` at the given revision to calculate the hash or use
+      # flake inputs and set the hash to the `input.name.narHash`
+      #
+      # For example:
+      # ```
+      #   sha256map = {
+      #     foo = {
+      #       rev = "9d34557edc0e574665ac60978d42d93f2445d3be";
+      #       sha256 = "1zhq9srrdr645q5cgdbglp6y2d9mkn6zci8qhcyxh5drf1ardy7d";
+      #     };
+      #   };
+      # ```
+      #
+      # NOTE: For Spago projects that consist solely of upstream, first-party
+      # dependencies, this can be left empty
+    , sha256map ? { }
     , shell ? { }
       # Paths to configuration files describing the build: `packages.dhall`,
       # etc... These can be derived from the `src`, but can also be explicitly
@@ -54,9 +73,26 @@ let
         (../package-sets + "/${plan.upstream.path}.nix")
         { inherit pkgs; };
 
-      # TODO Add the `additional` as well later
-      spagoPkgs = upstream;
+      additional = lib.trivial.flip builtins.mapAttrs plan.additions
+        (
+          name: dep: pkgs.stdenv.mkDerivation {
+            inherit name;
+            inherit (dep) version;
+            phases = "installPhase";
+            installPhase = "ln -s $src $out";
+            src = pkgs.fetchgit {
+              rev = sha256map.${name}.rev;
+              sha256 = sha256map.${name}.sha256;
+              url = dep.repo;
+            };
+          }
+        );
 
+      spagoPkgs = lib.attrsets.recursiveUpdate upstream additional;
+
+      # Install this once, and then is can be symlinked in later derivations.
+      # We can also use this to trick Spago into thinking it has written to its
+      # global cache
       installed = pkgs.runCommand
         "install-spago-deps"
         {
@@ -76,7 +112,8 @@ let
           tools ? { }
           # Extra packages to include in the development environment
         , packages ? [ ]
-          # If `true`, the Spago packages will be installed in `./.spago`
+          # If `true`, the Spago packages will be installed in `./.spago` in
+          # the `devShell`'s `shellHook`
         , install ? true
         , shellHook ? ""
         }:

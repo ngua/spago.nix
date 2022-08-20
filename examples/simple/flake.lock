@@ -16,6 +16,23 @@
         "type": "github"
       }
     },
+    "lattice": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1503271729,
+        "narHash": "sha256-EWnxJIUVHqNAwCdQpdb9bEaOyXWlnr0CM9SIIisYwFg=",
+        "owner": "Risto-Stevcev",
+        "repo": "purescript-lattice",
+        "rev": "aebe3686eba30f199d17964bfa892f0176c1742d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Risto-Stevcev",
+        "ref": "v0.3.0",
+        "repo": "purescript-lattice",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1650109093,
@@ -48,9 +65,28 @@
         "type": "github"
       }
     },
+    "properties": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1503250289,
+        "narHash": "sha256-ceDFtIO6tZDSRCpNBmh9d7ToVmZrtB64LhvpB4aYkcc=",
+        "owner": "Risto-Stevcev",
+        "repo": "purescript-properties",
+        "rev": "ddcad0f6043cc665037538467a2e2e4173ef276a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Risto-Stevcev",
+        "ref": "v0.2.0",
+        "repo": "purescript-properties",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
+        "lattice": "lattice",
         "nixpkgs": "nixpkgs",
+        "properties": "properties",
         "spago-nix": "spago-nix"
       }
     },
