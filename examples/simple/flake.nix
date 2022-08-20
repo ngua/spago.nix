@@ -20,6 +20,7 @@
       };
       projectFor = pkgs: pkgs.spago-nix.spagoProject {
         name = "spago-nix-example";
+        src = ./.;
         shell = { };
       };
       flakeFor = system: (projectFor (nixpkgsFor system)).flake;
