@@ -49,7 +49,7 @@
 
       overlays = {
         default = import ./overlay.nix {
-          inherit inputs;
+          inherit inputs self;
         };
       };
     };

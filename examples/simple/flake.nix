@@ -3,31 +3,28 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     # TODO use remote once it exists
-    purescript-nix.url = "git+file:///home/rory/projects/purescript.nix";
+    spago-nix.url = "git+file:///home/rory/projects/spago.nix";
   };
-  outputs = { self, nixpkgs, purescript-nix, ... }:
+  outputs = { self, nixpkgs, spago-nix, ... }:
     let
-      defaultSystems = [
+      supportedSystems = [
         "x86_64-linux"
         "x86_64-darwin"
         "aarch64-linux"
         "aarch64-darwin"
       ];
-      perSystem = nixpkgs.lib.genAttrs defaultSystems;
+      perSystem = nixpkgs.lib.genAttrs supportedSystems;
       nixpkgsFor = system: import nixpkgs {
         inherit system;
-        overlays = [ purescript-nix.overlay ];
+        overlays = [ spago-nix.overlays.default ];
       };
-      psProjectFor = system:
-        (nixpkgsFor system).purescript-nix.purescriptProject {
-          compiler = "0.14.5";
-          shell = {
-            tools = [ "purs-tidy" ];
-          };
-        };
-      psFlake = system: (psProjectFor system).flake;
+      projectFor = pkgs: pkgs.spago-nix.spagoProject {
+        name = "spago-nix-example";
+        shell = { };
+      };
+      flakeFor = system: (projectFor (nixpkgsFor system)).flake;
     in
     {
-      devShell = perSystem (system: (psFlake system).devShell);
+      devShell = perSystem (system: (flakeFor system).devShells.default);
     };
 }

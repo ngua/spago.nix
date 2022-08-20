@@ -29,12 +29,13 @@ let
     rec {
       devShell = mkDevShell shell;
 
-      flake = { devShells.default = devShell; };
+      flake = {
+        devShells.default = devShell;
+        inherit devShell;
+      };
     };
 
 in
 {
-  spago-nix = {
-    inherit spagoProject;
-  };
+  inherit spagoProject;
 }

@@ -3,11 +3,11 @@
     "easy-purescript-nix": {
       "flake": false,
       "locked": {
-        "lastModified": 1649768932,
-        "narHash": "sha256-T96xGZV2AEP07smv/L2s5U7jY1LTdJEiTnA90gJ3Fco=",
+        "lastModified": 1654121141,
+        "narHash": "sha256-mkHIyWk5Xh54FqCU7CT3G/tnHF7mLbQt3EfnNCMCTO8=",
         "owner": "justinwoo",
         "repo": "easy-purescript-nix",
-        "rev": "d56c436a66ec2a8a93b309c83693cef1507dca7a",
+        "rev": "5dca2f0f3b9ec0bceabb23fa1fd2b5f8ec30fa53",
         "type": "github"
       },
       "original": {
@@ -34,11 +34,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1650020604,
-        "narHash": "sha256-3lmFtbxH3BSUYkq7gTtoW9dLqkIAkjXWhlncfdx0wCk=",
+        "lastModified": 1659753918,
+        "narHash": "sha256-EsAYsT9BmKA4DBsFYANyWSRe6DGJg9rr6/5fgXrq9Dc=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "0b43a436fbbf96ecda249c4b8df5a349fe9f5e15",
+        "rev": "998bc5d86c7263a8de4208af97fe6d8f25c91956",
         "type": "github"
       },
       "original": {
@@ -48,26 +48,29 @@
         "type": "github"
       }
     },
-    "purescript-nix": {
+    "root": {
+      "inputs": {
+        "nixpkgs": "nixpkgs",
+        "spago-nix": "spago-nix"
+      }
+    },
+    "spago-nix": {
       "inputs": {
         "easy-purescript-nix": "easy-purescript-nix",
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1650198031,
-        "narHash": "sha256-q0uHh8MUoExmqZrr/AHw45kbgdZlGoegiB3Cg79zizg=",
+        "lastModified": 1660994483,
+        "narHash": "sha256-Nad8qJMVNswimKaPcNFsCfunbxEvwImEZryTmyijynM=",
+        "ref": "master",
+        "rev": "0bc1e970ddfb9b5216f8cb0c86adfa4bd62abab9",
+        "revCount": 22,
         "type": "git",
-        "url": "file:///home/rory/projects/purescript.nix"
+        "url": "file:///home/rory/projects/spago.nix"
       },
       "original": {
         "type": "git",
-        "url": "file:///home/rory/projects/purescript.nix"
-      }
-    },
-    "root": {
-      "inputs": {
-        "nixpkgs": "nixpkgs",
-        "purescript-nix": "purescript-nix"
+        "url": "file:///home/rory/projects/spago.nix"
       }
     }
   },
