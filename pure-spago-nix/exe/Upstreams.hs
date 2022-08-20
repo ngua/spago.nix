@@ -113,7 +113,7 @@ toDrvs =
                         , ("installPhase", NixString "ln -s $src $out")
                         ,
                           ( "src"
-                          , NixFunApp "pkgs.fetchGit" . NixAttrSet $
+                          , NixFunApp "pkgs.fetchgit" . NixAttrSet $
                               Map.fromList
                                 [ ("url", NixString repo)
                                 , ("sha256", NixString p.sha256)
