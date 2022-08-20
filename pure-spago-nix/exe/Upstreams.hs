@@ -107,7 +107,8 @@ toDrvs =
                   ( name
                   , NixFunApp "pkgs.stdenv.mkDerivation" . NixAttrSet $
                       Map.fromList
-                        [ ("version", NixString version)
+                        [ ("name", NixString name)
+                        , ("version", NixString version)
                         , ("phases", NixString "installPhase")
                         , ("installPhase", NixString "ln -s $src $out")
                         ,
