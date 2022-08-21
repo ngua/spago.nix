@@ -109,7 +109,7 @@ let
         {
           # List of purescript development tools available from
           # `easy-purescript-nix`
-          tools ? { }
+          tools ? [ ]
           # Extra packages to include in the development environment
         , packages ? [ ]
           # If `true`, the Spago packages will be installed in `./.spago` in
@@ -117,20 +117,15 @@ let
         , install ? true
         , shellHook ? ""
         }:
-        let
-          # First convert the compiler version from above into a format
-          # suitable for importing from `easy-purescript-nix`
-          compilerVersion = builtins.replaceStrings
-            [ "." ] [ "_" ]
-            (compilerVersionFor plan);
-        in
         pkgs.mkShell {
           inherit packages;
           nativeBuildInputs = [
             # Get the correct version of the `purs` compiler
             eps."purs-${compilerVersion}"
             eps.spago
-          ];
+          ]
+          # TODO handle different versions of tools, make `tools` a set?
+          ++ builtins.map (tool: eps.${tool}) tools;
           shellHook =
             (
               lib.optionalString install

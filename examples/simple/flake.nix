@@ -32,7 +32,9 @@
       projectFor = pkgs: pkgs.spago-nix.spagoProject {
         name = "spago-nix-example";
         src = ./.;
-        shell = { };
+        shell = {
+          tools = [ "psa" ];
+        };
         buildConfig = {
           packagesDhall = ./packages.dhall;
         };
