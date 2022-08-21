@@ -124,27 +124,26 @@ let
             [ "." ] [ "_" ]
             (compilerVersionFor plan);
         in
-        pkgs.mkShell
-          {
-            inherit packages;
-            nativeBuildInputs = [
-              # Get the correct version of the `purs` compiler
-              eps."purs-${compilerVersion}"
-              eps.spago
-            ];
-            shellHook =
-              (
-                lib.optionalString install
-                  ''
-                    dest=./.spago
-                    if [ -L "$dest" ]; then
-                      unlink "$dest"
-                    fi
-                    ln -s ${installed}/.spago ./.spago
-                  ''
-              )
-              + shellHook;
-          };
+        pkgs.mkShell {
+          inherit packages;
+          nativeBuildInputs = [
+            # Get the correct version of the `purs` compiler
+            eps."purs-${compilerVersion}"
+            eps.spago
+          ];
+          shellHook =
+            (
+              lib.optionalString install
+                ''
+                  dest=./.spago
+                  if [ -L "$dest" ]; then
+                    unlink "$dest"
+                  fi
+                  ln -s ${installed} ./.spago
+                ''
+            )
+            + shellHook;
+        };
     in
     rec {
       devShell = mkDevShell shell;

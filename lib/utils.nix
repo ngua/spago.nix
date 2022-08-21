@@ -1,9 +1,11 @@
 { pkgs, ... }:
 
 let
+  mkTarget = pkg: "./${pkg.name}/${pkg.version}";
+
   cpPackage = pkg:
     let
-      target = ".spago/${pkg.name}/${pkg.version}";
+      target = mkTarget pkg;
     in
     ''
       if [ ! -e ${target} ]; then
@@ -16,7 +18,7 @@ let
       fi
     '';
 
-  getGlob = pkg: ''".spago/${pkg.name}/${pkg.version}/src/**/*.purs"'';
+  getGlob = pkg: ''"${mkTarget pkg}/src/**/*.purs"'';
 in
 {
   install = spagoPkgs: pkgs.writeShellApplication {
