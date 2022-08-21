@@ -36,16 +36,7 @@
         buildConfig = {
           packagesDhall = ./packages.dhall;
         };
-        sha256map = {
-          lattice = {
-            rev = inputs.lattice.rev;
-            sha256 = inputs.lattice.narHash;
-          };
-          properties = {
-            rev = inputs.properties.rev;
-            sha256 = inputs.properties.narHash;
-          };
-        };
+        sha256map = pkgs.spago-nix.utils.makeSha256map inputs;
       };
       flakeFor = system: (projectFor (nixpkgsFor system)).flake;
     in

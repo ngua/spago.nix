@@ -31,4 +31,11 @@ in
       echo "echo done."
     '';
   };
+
+  # Turns flake `inputs` into a `sha256map` that can be used with `spagoProject`,
+  # assuming that the extra dependencies are pinned using a flake
+  makeSha256map = builtins.mapAttrs (_: v: {
+    inherit (v) rev;
+    sha256 = v.narHash;
+  });
 }
