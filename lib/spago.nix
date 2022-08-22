@@ -63,6 +63,8 @@ let
     , buildConfig ? {
         packagesDhall = /. + src + "/packages.dhall";
       }
+    , strictComp ? true
+    , censorCodes ? [ ]
     , ...
     }:
     let
@@ -90,9 +92,13 @@ let
 
       spagoPkgs = lib.attrsets.recursiveUpdate upstream additional;
 
+      # First convert the compiler version from above into a format
+      # suitable for importing from `easy-purescript-nix`
+      compilerVersion = builtins.replaceStrings
+        [ "." ] [ "_" ]
+        (compilerVersionFor plan);
+
       # Install this once, and then is can be symlinked in later derivations.
-      # We can also use this to trick Spago into thinking it has written to its
-      # global cache
       installed = pkgs.runCommand
         "install-spago-deps"
         {
@@ -102,6 +108,36 @@ let
           mkdir $out && cd $out
           install-spago-pkgs
         '';
+
+      # Get the correct version of the `purs` compiler
+      compiler =
+        eps."purs-${compilerVersion}";
+
+      # Compile all of the project's dependencies and sources. Unfortunately,
+      # we can't use `spago` here -- it will _always_ attempt to connect to the
+      # network, even if we try to trick it by linking the pre-installed
+      # packages to its expected cache location (`$XDG_CACHE_HOME/spago`)
+      output =
+        let
+          spagoGlobs = builtins.toString (
+            builtins.map utils.getSpagoGlob (builtins.attrValues spagoPkgs)
+          );
+        in
+        pkgs.runCommand "${name}-output"
+          {
+            nativeBuildInputs = [ compiler eps.psa ];
+          }
+          ''
+            mkdir $out && cd $out
+            cp -r ${src}/* .
+            ln -s ${installed} .spago
+            psa ${pkgs.lib.optionalString strictComp "--strict" } \
+              --censor-lib --is-lib=.spago ${spagoGlobs} "./**/*.purs" \
+              ${
+                lib.optionalString (censorCodes != [])
+                "--censor-codes=${builtins.concatStringsSep "," censorCodes} \ "
+              }
+          '';
 
       # Make a `devShell` from the options provided via `spagoProject.shell`,
       # all of which have default options
@@ -120,9 +156,8 @@ let
         pkgs.mkShell {
           inherit packages;
           nativeBuildInputs = [
-            # Get the correct version of the `purs` compiler
-            eps."purs-${compilerVersion}"
             eps.spago
+            compiler
           ]
           # TODO handle different versions of tools, make `tools` a set?
           ++ builtins.map (tool: eps.${tool}) tools;
@@ -140,12 +175,13 @@ let
             + shellHook;
         };
     in
-    rec {
-      devShell = mkDevShell shell;
+    {
+      flake = rec {
+        devShells.default = mkDevShell shell;
 
-      flake = {
-        devShells.default = devShell;
-        inherit devShell;
+        devShell = devShell.default;
+
+        packages = { inherit output; };
       };
     };
 

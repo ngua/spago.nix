@@ -17,10 +17,10 @@ let
         echo "${target} already exists. Skipping."
       fi
     '';
-
-  getGlob = pkg: ''"${mkTarget pkg}/src/**/*.purs"'';
 in
 {
+  getSpagoGlob = pkg: ''".spago/${mkTarget pkg}/src/**/*.purs"'';
+
   install = spagoPkgs: pkgs.writeShellApplication {
     name = "install-spago-pkgs";
     runtimeInputs = [ ];

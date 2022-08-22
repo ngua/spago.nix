@@ -43,6 +43,13 @@
       flakeFor = system: (projectFor (nixpkgsFor system)).flake;
     in
     {
-      devShell = perSystem (system: (flakeFor system).devShells.default);
+      devShells = perSystem (system: {
+        inherit ((flakeFor system).devShells) default;
+      });
+
+      packages = perSystem (system: {
+        inherit ((flakeFor system).packages) output;
+      });
+
     };
 }
