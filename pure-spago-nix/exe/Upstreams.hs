@@ -40,9 +40,10 @@ import System.Process.Typed qualified as Process.Typed
 import Types (
   NixExpr (
     NixAttrSet,
-    NixFunApp,
-    NixString
+    NixFunApp
   ),
+  nixAttrSet,
+  nixString,
   prettyNixExpr,
  )
 
@@ -105,19 +106,19 @@ toDrvs =
               Map.fromList
                 [
                   ( name
-                  , NixFunApp "pkgs.stdenv.mkDerivation" . NixAttrSet $
-                      Map.fromList
-                        [ ("name", NixString name)
-                        , ("version", NixString version)
-                        , ("phases", NixString "installPhase")
-                        , ("installPhase", NixString "ln -s $src $out")
+                  , NixFunApp "pkgs.stdenv.mkDerivation" $
+                      nixAttrSet
+                        [ ("name", nixString name)
+                        , ("version", nixString version)
+                        , ("phases", nixString "installPhase")
+                        , ("installPhase", nixString "ln -s $src $out")
                         ,
                           ( "src"
-                          , NixFunApp "pkgs.fetchgit" . NixAttrSet $
-                              Map.fromList
-                                [ ("url", NixString repo)
-                                , ("sha256", NixString p.sha256)
-                                , ("rev", NixString p.rev)
+                          , NixFunApp "pkgs.fetchgit" $
+                              nixAttrSet
+                                [ ("url", nixString repo)
+                                , ("sha256", nixString p.sha256)
+                                , ("rev", nixString p.rev)
                                 ]
                           )
                         ]

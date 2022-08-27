@@ -11,13 +11,24 @@ module Dependencies (
 ) where
 
 import Control.Exception (Exception (displayException), IOException)
-import Control.Lens (at, (%=), (?=), (^.), (^?), _head)
+import Control.Lens (
+  at,
+  (%=),
+  (.=),
+  (?=),
+  (^.),
+  (^?),
+  _head,
+ )
 import Control.Monad (void, (<=<))
-import Control.Monad.Except (MonadError (throwError), liftEither, runExceptT)
+import Control.Monad.Except (
+  MonadError (throwError),
+  liftEither,
+  runExceptT,
+ )
 import Control.Monad.State.Strict (MonadState, execStateT)
 import Data.Bifunctor (first)
 import Data.Kind (Type)
-import Data.Map qualified as Map
 import Data.Sequence ((|>))
 import Data.Text (Text)
 import Data.Text.IO qualified
@@ -27,10 +38,13 @@ import Dhall.Core qualified as Dhall
 import Dhall.Crypto qualified
 import Dhall.Map qualified
 import Dhall.Parser qualified
+import Dhall.Pretty qualified
+import Prettyprinter qualified
+import Prettyprinter.Render.Text qualified
 import Types (
   NixExpr (NixAttrSet, NixString),
   SpagoAddition (SpagoAddition, repo, version),
-  SpagoDependencies (additions, imports),
+  SpagoDependencies (additions, additionsDhall, imports),
   SpagoDependencyError (
     MissingImportHash,
     MissingRecordField,
@@ -40,6 +54,8 @@ import Types (
   ),
   SpagoImport (SpagoImport, path, sha256),
   emptyDependencies,
+  nixAttrSet,
+  nixString,
  )
 
 extractDependenciesIO :: FilePath -> IO NixExpr
@@ -68,31 +84,29 @@ dependenciesToNix deps = do
     maybe (throwError MissingUpstream) pure $
       deps.imports ^? _head
   pure $
-    NixAttrSet $
-      Map.fromList
-        [ ("upstream", upstreamToAttrSet upstream)
-        , ("additions", NixAttrSet $ additionToAttrSet <$> deps.additions)
-        ]
+    nixAttrSet
+      [ ("upstream", upstreamToAttrSet upstream)
+      , ("additions", NixAttrSet $ additionToAttrSet <$> deps.additions)
+      , ("raw-additions", NixString True deps.additionsDhall)
+      ]
   where
     upstreamToAttrSet :: SpagoImport -> NixExpr
     upstreamToAttrSet imp =
-      NixAttrSet $
-        Map.fromList
-          [ ("path", NixString imp.path)
-          ,
-            ( "sha256"
-            , NixString $
-                Dhall.Crypto.toString imp.sha256 ^. packed
-            )
-          ]
+      nixAttrSet
+        [ ("path", nixString imp.path)
+        ,
+          ( "sha256"
+          , nixString $
+              Dhall.Crypto.toString imp.sha256 ^. packed
+          )
+        ]
 
     additionToAttrSet :: SpagoAddition -> NixExpr
     additionToAttrSet add =
-      NixAttrSet $
-        Map.fromList
-          [ ("repo", NixString add.repo)
-          , ("version", NixString add.version)
-          ]
+      nixAttrSet
+        [ ("repo", nixString add.repo)
+        , ("version", nixString add.version)
+        ]
 
 runExtractDependencies ::
   forall (m :: Type -> Type).
@@ -121,8 +135,14 @@ extractDependencies' = \case
       path <- getRemotePath remote
       #imports %= (|> SpagoImport {sha256, path})
   Dhall.Embed (Dhall.Import {}) -> throwError UnsupportedRemoteImport
-  Dhall.RecordLit m -> void . flip Dhall.Map.traverseWithKey m $
-    \name record -> do
+  r@(Dhall.RecordLit m) -> do
+    #additionsDhall
+      .= Prettyprinter.Render.Text.renderStrict
+        ( Prettyprinter.layoutPretty
+            Prettyprinter.defaultLayoutOptions
+            $ Dhall.Pretty.prettyExpr r
+        )
+    void . flip Dhall.Map.traverseWithKey m $ \name record -> do
       addition <- getAdditionInfo record
       #additions . at name ?= addition
   _ -> pure ()

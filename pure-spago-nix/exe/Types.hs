@@ -5,7 +5,12 @@ module Types (
   NixExpr (NixAttrSet, NixList, NixString, NixFunApp),
   SpagoAddition (SpagoAddition, repo, version),
   SpagoImport (SpagoImport, path, sha256),
-  SpagoDependencies (SpagoDependencies, imports, additions),
+  SpagoDependencies (
+    SpagoDependencies,
+    imports,
+    additions,
+    additionsDhall
+  ),
   SpagoDependencyError (
     MissingUpstream,
     MissingImportHash,
@@ -17,6 +22,8 @@ module Types (
   emptyDependencies,
   prettyNixExpr,
   options,
+  nixString,
+  nixAttrSet,
 ) where
 
 import Control.Exception (Exception (displayException))
@@ -103,11 +110,14 @@ instance Exception SpagoDependencyError where
 data SpagoDependencies = SpagoDependencies
   { imports :: Seq SpagoImport
   , additions :: Map Text SpagoAddition
+  , additionsDhall :: Text
+  -- ^ The actual Dhall expression containing the additional dependencies; this
+  -- is needed to use `spago` to list the exact dependencies
   }
   deriving stock (Show, Eq, Generic)
 
 emptyDependencies :: SpagoDependencies
-emptyDependencies = SpagoDependencies mempty mempty
+emptyDependencies = SpagoDependencies mempty mempty mempty
 
 {- | A Dhall import, usually an upstream package set. We only care about the
  path and the hash
@@ -134,14 +144,24 @@ very primitive literals -- just lists and attribute sets
 data NixExpr
   = NixList (Seq NixExpr)
   | NixAttrSet (Map Text NixExpr)
-  | NixString Text
+  | -- | Boolean argument indicates if this is a multi-line string
+    NixString Bool Text
   | NixFunApp Text NixExpr
   deriving stock (Show, Eq, Generic)
 
 prettyNixExpr :: forall (ann :: Type). NixExpr -> Prettyprinter.Doc ann
 prettyNixExpr = \case
   NixFunApp name arg -> Prettyprinter.pretty name <+> prettyNixExpr arg
-  NixString t -> qtext t
+  NixString False t -> qtext t
+  NixString True t ->
+    Prettyprinter.sep
+      [ Prettyprinter.nest 2 $
+          Prettyprinter.vsep
+            [ "''"
+            , Prettyprinter.pretty t
+            ]
+      , "''"
+      ]
   NixList nexprs -> prettyElems ("[", "]") prettyNixExpr $ toList nexprs
   NixAttrSet attrs -> prettyElems ("{", "}") f $ Map.toList attrs
     where
@@ -165,3 +185,9 @@ prettyElems (open, close) f xs =
 
 qtext :: forall (ann :: Type). Text -> Prettyprinter.Doc ann
 qtext = Prettyprinter.dquotes . Prettyprinter.pretty
+
+nixString :: Text -> NixExpr
+nixString = NixString False
+
+nixAttrSet :: [(Text, NixExpr)] -> NixExpr
+nixAttrSet = NixAttrSet . Map.fromList
