@@ -168,6 +168,16 @@ let
           spagoGlobs = builtins.toString (
             builtins.map utils.getSpagoGlob (builtins.attrValues spagoPkgs)
           );
+          psaCommand = builtins.concatStringsSep " "
+            [
+              ''psa ${pkgs.lib.optionalString strictComp "--strict" }''
+              (
+                lib.optionalString
+                  (censorCodes != [ ])
+                  ''--censor-codes=${builtins.concatStringsSep "," censorCodes}''
+              )
+              ''--censor-lib --is-lib=.spago ${spagoGlobs} "./**/*.purs"''
+            ];
         in
         pkgs.runCommand "${name}-output"
           {
@@ -177,12 +187,7 @@ let
             mkdir $out && cd $out
             cp -r ${src}/* .
             ln -s ${installed} .spago
-            psa ${pkgs.lib.optionalString strictComp "--strict" } \
-              --censor-lib --is-lib=.spago ${spagoGlobs} "./**/*.purs" \
-              ${
-                lib.optionalString (censorCodes != [])
-                "--censor-codes=${builtins.concatStringsSep "," censorCodes} \ "
-              }
+            ${psaCommand}
           '';
 
       # Make a `devShell` from the options provided via `spagoProject.shell`,
