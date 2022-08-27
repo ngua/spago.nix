@@ -24,7 +24,7 @@ module Types (
   options,
   nixString,
   nixAttrSet,
-) where
+NixStringLineSpan(..)) where
 
 import Control.Exception (Exception (displayException))
 import Data.ByteString.Lazy qualified as Lazy
@@ -145,15 +145,18 @@ data NixExpr
   = NixList (Seq NixExpr)
   | NixAttrSet (Map Text NixExpr)
   | -- | Boolean argument indicates if this is a multi-line string
-    NixString Bool Text
+    NixString NixStringLineSpan Text
   | NixFunApp Text NixExpr
+  deriving stock (Show, Eq, Generic)
+
+data NixStringLineSpan = Multi | Single
   deriving stock (Show, Eq, Generic)
 
 prettyNixExpr :: forall (ann :: Type). NixExpr -> Prettyprinter.Doc ann
 prettyNixExpr = \case
   NixFunApp name arg -> Prettyprinter.pretty name <+> prettyNixExpr arg
-  NixString False t -> qtext t
-  NixString True t ->
+  NixString Single t -> qtext t
+  NixString Multi t ->
     Prettyprinter.sep
       [ Prettyprinter.nest 2 $
           Prettyprinter.vsep
@@ -187,7 +190,7 @@ qtext :: forall (ann :: Type). Text -> Prettyprinter.Doc ann
 qtext = Prettyprinter.dquotes . Prettyprinter.pretty
 
 nixString :: Text -> NixExpr
-nixString = NixString False
+nixString = NixString Single
 
 nixAttrSet :: [(Text, NixExpr)] -> NixExpr
 nixAttrSet = NixAttrSet . Map.fromList

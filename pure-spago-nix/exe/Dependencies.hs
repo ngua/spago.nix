@@ -43,6 +43,7 @@ import Prettyprinter qualified
 import Prettyprinter.Render.Text qualified
 import Types (
   NixExpr (NixAttrSet, NixString),
+  NixStringLineSpan (Multi),
   SpagoAddition (SpagoAddition, repo, version),
   SpagoDependencies (additions, additionsDhall, imports),
   SpagoDependencyError (
@@ -87,7 +88,7 @@ dependenciesToNix deps = do
     nixAttrSet
       [ ("upstream", upstreamToAttrSet upstream)
       , ("additions", NixAttrSet $ additionToAttrSet <$> deps.additions)
-      , ("raw-additions", NixString True deps.additionsDhall)
+      , ("additions-dhall", NixString Multi deps.additionsDhall)
       ]
   where
     upstreamToAttrSet :: SpagoImport -> NixExpr
