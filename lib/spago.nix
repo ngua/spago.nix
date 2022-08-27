@@ -91,7 +91,9 @@ let
           }
         );
 
-      spagoPkgs = lib.attrsets.recursiveUpdate upstream additional;
+      allPkgs = lib.attrsets.recursiveUpdate upstream additional;
+
+      spagoPkgs = lib.attrsets.genAttrs lsDeps (dep: allPkgs.${dep});
 
       # First convert the compiler version from above into a format
       # suitable for importing from `easy-purescript-nix`
@@ -99,11 +101,17 @@ let
         [ "." ] [ "_" ]
         (compilerVersionFor plan);
 
-      # Install this once, and then is can be symlinked in later derivations.
-      installed = pkgs.runCommand
-        "install-spago-deps"
+      # These are the actual dependencies we need to install to build things.
+      installed = installOrCache "install-spago-deps" spagoPkgs;
+
+      # These are _all_ of the packages from the upstream package set and the
+      # additional dependencies
+      cached = installOrCache "cache-spago-deps" allPkgs;
+
+      installOrCache = name: ps: pkgs.runCommand
+        name
         {
-          nativeBuildInputs = [ (utils.install spagoPkgs) ];
+          nativeBuildInputs = [ (utils.install ps) ];
         }
         ''
           mkdir $out && cd $out
@@ -122,39 +130,43 @@ let
       #     upstream import (i.e. the downloaded Dhall file)
       # All of this is necessary to prevent both Dhall and Spago from attempting
       # network connections
-      lsDeps =
-        let
-          packageSetUrl =
-            "https://github.com/purescript/package-sets/releases/download";
-          packageSetDhall = builtins.fetchurl {
-            # FIXME
-            # This should be generated automatically when making the upstream
-            # package sets
-            sha256 = (import ./upstream-hashes.nix).${plan.upstream.path};
-            url = "${packageSetUrl}/${plan.upstream.path}/packages.dhall";
-          };
-        in
-        pkgs.runCommand "${name}-ls-deps"
-          {
-            buildInputs = [ eps.spago pkgs.dhall ];
-          }
-          ''
-            export HOME="$TMP"
-            mkdir -p "$HOME"/.cache/spago
-            export XDG_CACHE_HOME="$HOME"/.cache
-            cp -r ${installed}/* "$XDG_CACHE_HOME"/spago
-            cp ${self}/lib/metadataV1.json "$XDG_CACHE_HOME"/spago
+      lsDeps = import
+        (
+          let
+            packageSetUrl =
+              "https://github.com/purescript/package-sets/releases/download";
+            packageSetDhall = builtins.fetchurl {
+              # FIXME
+              # This should be generated automatically when making the upstream
+              # package sets
+              sha256 = (import ./upstream-hashes.nix).${plan.upstream.path};
+              url = "${packageSetUrl}/${plan.upstream.path}/packages.dhall";
+            };
+          in
+          pkgs.runCommand "${name}-ls-deps"
+            {
+              buildInputs = [ eps.spago pkgs.dhall pkgs.jq ];
+            }
+            ''
+              export HOME="$TMP"
+              mkdir -p "$HOME"/.cache/spago
+              export XDG_CACHE_HOME="$HOME"/.cache
+              cp -r ${cached}/* "$XDG_CACHE_HOME"/spago
+              cp ${self}/lib/metadataV1.json "$XDG_CACHE_HOME"/spago
 
-            mkdir $out
-            cat <<EOF >additions.dhall
-              ${plan.additions-dhall}
-            EOF
-            upstream=$(dhall --file ${packageSetDhall})
-            additions=$(dhall --file ./additions.dhall)
-            dhall <<< "$upstream // $additions" > ./packages.dhall
-            cp ${buildConfig.spagoDhall} ./spago.dhall
-            spago ls deps -t --json > $out/deps.json
-          '';
+              mkdir $out
+              cat <<EOF >additions.dhall
+                ${plan.additions-dhall}
+              EOF
+              upstream=$(dhall --file ${packageSetDhall})
+              additions=$(dhall --file ./additions.dhall)
+              dhall <<< "$upstream // $additions" > ./packages.dhall
+              cp ${buildConfig.spagoDhall} ./spago.dhall
+              spago ls deps -t --json |
+                jq --slurp 'map(.packageName)' |
+                tr ',' ' ' > $out/default.nix
+            ''
+        );
 
       # Get the correct version of the `purs` compiler
       compiler = eps."purs-${compilerVersion}";
@@ -232,11 +244,7 @@ let
 
         devShell = devShell.default;
 
-        packages = {
-          inherit output;
-          # FIXME remove this, just for testing now
-          inherit lsDeps;
-        };
+        packages = { inherit output; };
       };
     };
 
