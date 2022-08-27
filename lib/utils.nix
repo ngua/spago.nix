@@ -18,7 +18,7 @@ let
       fi
     '';
 in
-{
+rec {
   getSpagoGlob = pkg: ''".spago/${mkTarget pkg}/src/**/*.purs"'';
 
   install = spagoPkgs: pkgs.writeShellApplication {
@@ -33,6 +33,18 @@ in
       echo "echo done."
     '';
   };
+
+  # Can be used to emulate `spago install` or to (mostly) create a mock global
+  # package cache (`spago` always expects this)
+  installOrCache = name: ps: pkgs.runCommand
+    name
+    {
+      nativeBuildInputs = [ (install ps) ];
+    }
+    ''
+      mkdir $out && cd $out
+      install-spago-pkgs
+    '';
 
   # Turns flake `inputs` into a `sha256map` that can be used with `spagoProject`,
   # assuming that the extra dependencies are pinned using a flake

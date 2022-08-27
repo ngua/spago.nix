@@ -71,11 +71,18 @@ let
     let
       plan = projectPlanFor name buildConfig.packagesDhall;
 
+      # First convert the compiler version from above into a format
+      # suitable for importing from `easy-purescript-nix`
+      compilerVersion = builtins.replaceStrings
+        [ "." ] [ "_" ]
+        (compilerVersionFor plan);
+
       # Get the upstream package set
       upstream = import
         (../package-sets + "/${plan.upstream.path}.nix")
         { inherit pkgs; };
 
+      # This actually fetches the sources for the declared third-party dependencies
       additional = lib.trivial.flip builtins.mapAttrs plan.additions
         (
           name: dep: pkgs.stdenv.mkDerivation {
@@ -91,32 +98,22 @@ let
           }
         );
 
+      # Unfortunately, we need both of these package sets, and there's a bit
+      # of unavoidable waste between them
+      #
+      # `allPkgs` (and `cached` derived from it) contains all of the packages
+      # in the upstream package set and the additional dependencies specified
+      # in `packages.dhall`. It exists solely to trick `spago` into thinking
+      # there's a global package cache in `XDG_CACHE_HOME`. If this isn't done,
+      # `spago` will attempt to download things
+      #
+      # `spagoPkgs` is a subset of `allPkgs` and represents the actual project
+      # dependencies (including transitive ones). `installed` can be "installed"
+      # similar to how `spago install` works
       allPkgs = lib.attrsets.recursiveUpdate upstream additional;
-
       spagoPkgs = lib.attrsets.genAttrs lsDeps (dep: allPkgs.${dep});
-
-      # First convert the compiler version from above into a format
-      # suitable for importing from `easy-purescript-nix`
-      compilerVersion = builtins.replaceStrings
-        [ "." ] [ "_" ]
-        (compilerVersionFor plan);
-
-      # These are the actual dependencies we need to install to build things.
-      installed = installOrCache "install-spago-deps" spagoPkgs;
-
-      # These are _all_ of the packages from the upstream package set and the
-      # additional dependencies
-      cached = installOrCache "cache-spago-deps" allPkgs;
-
-      installOrCache = name: ps: pkgs.runCommand
-        name
-        {
-          nativeBuildInputs = [ (utils.install ps) ];
-        }
-        ''
-          mkdir $out && cd $out
-          install-spago-pkgs
-        '';
+      cached = utils.installOrCache "cache-spago-deps" allPkgs;
+      installed = utils.installOrCache "install-spago-deps" spagoPkgs;
 
       # This is a necessary step to get the exact project dependencies, including
       # the transitive dependencies. Otherwise, we will always build the entire
