@@ -44,7 +44,10 @@
       });
 
       packages = perSystem (system: {
-        inherit ((flakeFor system).packages) output lsDeps;
+        inherit ((flakeFor system).packages) output;
+        example-bundle = (projectFor (nixpkgsFor system)).bundleModule {
+          main = "Main";
+        };
       });
 
     };
