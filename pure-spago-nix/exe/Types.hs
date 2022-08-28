@@ -3,6 +3,7 @@
 module Types (
   Options (ExtractDependencies, GenerateUpstream),
   NixExpr (NixAttrSet, NixList, NixString, NixFunApp),
+  NixStringLineSpan (Multi, Single),
   SpagoAddition (SpagoAddition, repo, version),
   SpagoImport (SpagoImport, path, sha256),
   SpagoDependencies (
@@ -24,10 +25,9 @@ module Types (
   options,
   nixString,
   nixAttrSet,
-NixStringLineSpan(..)) where
+) where
 
 import Control.Exception (Exception (displayException))
-import Data.ByteString.Lazy qualified as Lazy
 import Data.Generics.Labels ()
 import Data.Kind (Type)
 import Data.Map qualified as Map
@@ -43,7 +43,7 @@ import Prettyprinter qualified
 
 data Options
   = ExtractDependencies FilePath
-  | GenerateUpstream Lazy.ByteString
+  | GenerateUpstream FilePath
   deriving stock (Show, Eq, Generic)
 
 options :: Options.ParserInfo Options

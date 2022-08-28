@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE ViewPatterns #-}
 
 -- This module acts as a script to fetch a given Purescript upstream, then
 -- calculate the sha256 for each entry in the Dhall configuration. The IO
@@ -24,15 +23,13 @@ import Data.ByteString.Lazy.Char8 qualified as Lazy.Char8
 import Data.Kind (Type)
 import Data.Map qualified as Map
 import Data.Text (Text)
-import Data.Text.Encoding qualified as Text.Encoding
+import Data.Text.IO qualified as Text.IO
 import Data.Text.Lens (unpacked)
 import Data.Tuple (swap)
 import Data.Void (Void)
 import Dhall.Core qualified as Dhall
 import Dhall.Map qualified
 import Dhall.Parser qualified
-import Network.HTTP.Client qualified as Client
-import Network.HTTP.Client.TLS qualified as Client.Tls
 import Prettyprinter qualified
 import Prettyprinter.Util qualified
 import System.Exit (ExitCode (ExitFailure, ExitSuccess))
@@ -47,16 +44,12 @@ import Types (
   prettyNixExpr,
  )
 
-generateUpstreamIO :: Lazy.Char8.ByteString -> IO ()
-generateUpstreamIO pkgset = do
-  manager <- Client.Tls.newTlsManager
-  req <- Client.parseRequest $ mkUrl pkgset
-  raw <- Client.responseBody <$> Client.httpLbs req manager
+generateUpstreamIO :: FilePath -> IO ()
+generateUpstreamIO path = do
+  raw <- Text.IO.readFile path
   dhall <-
-    liftEither . bimap (userError . show) (Dhall.denote @_ @_ @Void)
-      . Dhall.Parser.exprFromText "(upstream)"
-      . Text.Encoding.decodeUtf8
-      $ Lazy.Char8.toStrict raw
+    liftEither . bimap (userError . show) (Dhall.denote @_ @_ @Void) $
+      Dhall.Parser.exprFromText "(upstream)" raw
   nix <- toDrvs dhall
   Prettyprinter.Util.putDocW 80 $
     Prettyprinter.vsep
@@ -64,14 +57,6 @@ generateUpstreamIO pkgset = do
       , "{ pkgs, ... }:"
       , nix
       ]
-  where
-    mkUrl :: Lazy.Char8.ByteString -> [Char]
-    mkUrl (Lazy.Char8.unpack -> str) =
-      mconcat
-        [ "https://github.com/purescript/package-sets/releases/download/"
-        , str
-        , "/packages.dhall"
-        ]
 
 toDrvs ::
   forall (ann :: Type).

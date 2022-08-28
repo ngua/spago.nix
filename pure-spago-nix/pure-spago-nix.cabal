@@ -33,8 +33,6 @@ executable pure-spago-nix
     , containers
     , dhall
     , generic-lens
-    , http-client
-    , http-client-tls
     , lens
     , mtl
     , optparse-applicative

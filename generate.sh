@@ -122,11 +122,17 @@ len="${#upstreams[@]}"
 
 for i in "${!upstreams[@]}"; do
     upstream="${upstreams[$i]}"
-    path="package-sets/$upstream.nix"
-    if [[ ! -f "$path" ]]; then
+    path="package-sets/$upstream"
+    if [[ ! -d "$path" ]]; then
+        mkdir "$path"
+        dhallpath="$path/packages.dhall"
+        wget -qO- \
+            "https://github.com/purescript/package-sets/releases/download/$upstream/packages.dhall" \
+            >"$dhallpath"
+        nixpath="$path/default.nix"
         idx=$((1 + $i))
         echo -n "[$idx / $len] Creating $path..."
-        pure-spago-nix generate "$upstream" >"$path"
+        pure-spago-nix generate "$dhallpath" >"$nixpath"
         echo " done"
     fi
 done
