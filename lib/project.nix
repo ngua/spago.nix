@@ -67,10 +67,11 @@ let
   # derivations to build the project, create a suitable `devShell`, etc...
   plan = import
     (
-      pkgs.runCommand
-        "${name}-plan"
+      pkgs.runCommand "${name}-plan"
         {
-          nativeBuildInputs = [ self.packages.${pkgs.system}.pure-spago-nix ];
+          nativeBuildInputs = [
+            self.packages.${pkgs.system}.pure-spago-nix
+          ];
         }
         ''
           mkdir $out
@@ -123,8 +124,6 @@ let
   # attempting network connections. The idea is:
   #   - copy the installed Spago packages to a fake `XDG_CACHE_HOME` location
   #   - also copy a metadata file that Spago generates there
-  #   - download the upstream package set (ideally, this should be done
-  #     elsewhere)
   #   - reconstruct a `packages.dhall` that does not contain any remote
   #     imports, by combining the raw Dhall additions along with the resolved
   #     upstream import (i.e. the downloaded Dhall file)
@@ -135,7 +134,6 @@ let
     cp -r ${cached}/* "$XDG_CACHE_HOME"/spago
     cp ${self}/lib/metadataV1.json "$XDG_CACHE_HOME"/spago
   '';
-
   fakePackagesDhall = pkgs.runCommand
     "fake-packages-dhall"
     {
@@ -189,17 +187,12 @@ let
         ''
     );
 
-  # Compile all of the project's dependencies and sources. We can use `spago`
-  # by tricking it
-  #
-  # NOTE: This also copies all of the project sources into the resulting
-  # derivation. `purs` doesn't provide a way to include any external files to its
-  # `output` (and if we attempted to refer to absolute paths from the project-wide
-  # `src` argument, they would be wrong)
-  #
-  # TODO see if we can compile the dependencies once instead and then copy
-  # the `output` directory
-  output =
+  # Spago doesn't provide a way to pass arguments to `psa` (which provides
+  # for a nicer compilation experience than `purs` directly, so we want to
+  # use it). We can shadow the real `psa` executable by wrapping it in a
+  # shell script and intercepting the arguments passed to it from
+  # `spago build` while also adding our own
+  fakePsa =
     let
       psaArgs = builtins.concatStringsSep " "
         [
@@ -211,20 +204,27 @@ let
           )
           "--censor-lib --is-lib=.spago"
         ];
-      # Spago doesn't provide a way to pass arguments to `psa` (which provides
-      # for a nicer compilation experience than `purs` directly, so we want to
-      # use it). We can shadow the real `psa` executable by wrapping it in a
-      # shell script and intercepting the arguments passed to it from
-      # `spago build` while also adding our own
-      fakePsa = pkgs.writeShellApplication {
-        name = "psa";
-        runtimeInputs = [ eps.psa ];
-        text = ''
-          psa ${psaArgs} "$@"
-        '';
-      };
     in
-    pkgs.runCommand "${name}-output"
+    pkgs.writeShellApplication {
+      name = "psa";
+      runtimeInputs = [ eps.psa ];
+      text = ''
+        psa ${psaArgs} "$@"
+      '';
+    };
+
+  # Helper for derivations calling `spago build` or similar
+  build =
+    {
+      # The command to run
+      text
+      # Any additional inputs to the derivation
+    , extraInputs ? [ ]
+      # Only used for naming the resulting derivation. Corresponds to the
+      # `--deps-only` flag used by `spago-build`
+    , depsOnly ? false
+    , ...
+    }: pkgs.runCommand ''${name}-output${lib.optionalString depsOnly "-deps"}''
       {
         nativeBuildInputs = [
           compiler
@@ -233,18 +233,61 @@ let
           fakePackagesDhall
           # `spago` invokes `git`
           pkgs.git
-        ];
+          pkgs.jq
+        ] ++ extraInputs;
       }
-      ''
-        ${prepareFakeSpagoEnv}
+      text;
 
-        mkdir $out && cd $out
-        cp -r ${src}/* .
-        chmod -R +rwx .
-        cp ${fakePackagesDhall}/packages.dhall .
-        ln -s ${installed} .spago
-        spago build --no-install
-      '';
+  # Compile the project's dependencies. These can be cached and saved to copy
+  # later
+  outputDeps = build {
+    depsOnly = true;
+    # If any of the files in the `output` directory have a modified date later
+    # then the dependencies (i.e. the contents of `.spago`), `purs` will
+    # trigger a rebuild, hence the `find` commmand to set the date. The
+    # modified date of all of the dependencies in `.spago` will be recorded
+    # in the `cache-db.json` that `purs` generates; this will be copied later
+    # in other derivations that build the project
+    text = ''
+      ${prepareFakeSpagoEnv}
+
+      mkdir $out && cd $out
+      cp ${fakePackagesDhall}/packages.dhall .
+      cp ${buildConfig.spagoDhall} ./spago.dhall
+      cp -r ${installed} .spago
+      find .spago -exec touch -m {} +
+      spago build --no-install --quiet
+    '';
+  };
+
+  # Compile all of the project's dependencies and sources. We can use `spago`
+  # by tricking it
+  #
+  # NOTE: This also copies all of the project sources into the resulting
+  # derivation. `purs` doesn't provide a way to include any external files to its
+  # `output` (and if we attempted to refer to absolute paths from the project-wide
+  # `src` argument, they would be wrong)
+  output = build {
+    depsOnly = true;
+    extraInputs = [ outputDeps ];
+    # See the note on file modications times in `outputDeps` above. We can
+    # make sure that `purs` doesn't rebuild by setting the modification date
+    # of all files in `output` to the UNIX epoch
+    text = ''
+      ${prepareFakeSpagoEnv}
+
+      mkdir $out && cd $out
+      cp -r ${src}/* .
+      chmod -R +rwx .
+      cp ${fakePackagesDhall}/packages.dhall .
+      ln -s ${installed} .spago
+      mkdir output
+      cp -r ${outputDeps}/output/* ./output
+      find ./output -exec touch -m -d '01/01/1970' {} +
+      chmod -R +rwx .
+      spago build --no-install --quiet
+    '';
+  };
 
   # Make a `devShell` from the options provided via `spagoProject.shell`,
   # all of which have default options
