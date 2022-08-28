@@ -416,17 +416,24 @@ let
         ''
         +
         (
-          # FIXME
-          # Ensure that `psci-support` is always in `installed`, then we can
-          # symlink `.spago` again (other `spago repl` will try to write to it)
+          # NOTE
+          # This ensures that `psci-support` is always in `installed`, otherwise
+          # `spago` will download it
+          let
+            installed' = utils.installOrCache "install-spago-deps" (
+              spagoPkgs // lib.attrsets.optionalAttrs
+                (!(spagoPkgs ? psci-support))
+                { inherit (allPkgs) psci-support; }
+            );
+          in
           lib.optionalString install
             ''
               if [[ -d .spago ]]; then
                 rm -rf .spago
               fi
               mkdir .spago
-              cp -r ${installed}/* ./.spago
-              chmod +rwx -R .spago
+              cp -r ${installed'}/* .spago
+              chmod -R +rwx .spago
             ''
         )
         + shellHook;
