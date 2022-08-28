@@ -268,7 +268,6 @@ let
   # `output` (and if we attempted to refer to absolute paths from the project-wide
   # `src` argument, they would be wrong)
   output = build {
-    depsOnly = true;
     extraInputs = [ outputDeps ];
     # See the note on file modications times in `outputDeps` above. We can
     # make sure that `purs` doesn't rebuild by setting the modification date
