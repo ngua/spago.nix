@@ -84,7 +84,6 @@ let
     (lib.strings.splitString "-" plan.upstream.path)
     1;
 
-
   plan = projectPlanFor name buildConfig.packagesDhall;
 
   # First convert the compiler version from above into a format
@@ -94,8 +93,7 @@ let
     (compilerVersionFor plan);
 
   # Get the upstream package set
-  upstream = import
-    (../package-sets + "/${plan.upstream.path}.nix")
+  upstream = import (../package-sets + "/${plan.upstream.path}")
     { inherit pkgs; };
 
   # This actually fetches the sources for the declared third-party dependencies
@@ -134,32 +132,20 @@ let
     cp ${self}/lib/metadataV1.json "$XDG_CACHE_HOME"/spago
   '';
 
-  fakePackagesDhall =
-    let
-      packageSetUrl =
-        "https://github.com/purescript/package-sets/releases/download";
-      packageSetDhall = builtins.fetchurl {
-        # FIXME
-        # This should be generated automatically when making the upstream
-        # package sets
-        sha256 = (import ./upstream-hashes.nix).${plan.upstream.path};
-        url = "${packageSetUrl}/${plan.upstream.path}/packages.dhall";
-      };
-    in
-    pkgs.runCommand
-      "fake-packages-dhall"
-      {
-        buildInputs = [ pkgs.dhall ];
-      }
-      ''
-        cat <<EOF >additions.dhall
-          ${plan.additions-dhall}
-        EOF
-        upstream=$(dhall --file ${packageSetDhall})
-        additions=$(dhall --file ./additions.dhall)
-        dhall <<< "$upstream // $additions" > ./packages.dhall
-        mkdir $out && mv ./packages.dhall $out
-      '';
+  fakePackagesDhall = pkgs.runCommand
+    "fake-packages-dhall"
+    {
+      buildInputs = [ pkgs.dhall ];
+    }
+    ''
+      cat <<EOF >additions.dhall
+        ${plan.additions-dhall}
+      EOF
+      upstream=$(dhall --file ${../package-sets + "/${plan.upstream.path}/packages.dhall"})
+      additions=$(dhall --file ./additions.dhall)
+      dhall <<< "$upstream // $additions" > ./packages.dhall
+      mkdir $out && mv ./packages.dhall $out
+    '';
 
   # Unfortunately, we need both of these package sets, and there's a bit
   # of unavoidable waste between them
