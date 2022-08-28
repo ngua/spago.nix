@@ -1,11 +1,34 @@
 { self, inputs, pkgs, utils, ... }:
 { name
 , src
+  # An attribute set mapping dependency names to their source (e.g. from your
+  # flake inputs). These must correspond to the overrides or additions in your
+  # `packages.dhall`
+  #
+  # If you provide the sources this way, they will not be fetched from their
+  # remote and your do NOT need to provide the sha256 hashes for each extra
+  # dependency in the `sha256map`
+  #
+  # For example (assuming you have added the correct inputs to your flake):
+  #
+  # ```
+  #   extraSources = {
+  #     inherit (inputs) foo bar baz;
+  #   };
+  # ```
+  # NOTE: You must pin these to the exact version specified in your
+  # `packages.dhall` in order for Spago to find them correctly
+  #
+  # NOTE: For Spago projects that consist solely of upstream, first-party
+  # dependencies, this can be left empty
+, extraSources ? { }
   # A set mapping dependency names to the specific revision and sha256 hash
-  # of its sources. This is required as `packages.dhall` does not
-  # allow you to specify the hashes of git dependencies. You can use
-  # `nix-prefetch-git` at the given revision to calculate the hash or use
-  # flake inputs and set the hash to the `input.name.narHash`
+  # of its sources. If you do not use the `extraSources` argument to provide
+  # the additional or overriden dependencies specified in your `packages.dhall`,
+  # this is required as there is no other way to specify the hashes of git
+  # dependencies. You can use `nix-prefetch-git` at the given revision to
+  # calculate the hash or use flake inputs and set the hash to the
+  # `input.name.narHash`
   #
   # For example:
   # ```
@@ -16,9 +39,6 @@
   #     };
   #   };
   # ```
-  #
-  # NOTE: For Spago projects that consist solely of upstream, first-party
-  # dependencies, this can be left empty
 , sha256map ? { }
 , shell ? { }
   # Paths to configuration files describing the build: `packages.dhall`,
@@ -86,11 +106,14 @@ let
         inherit (dep) version;
         phases = "installPhase";
         installPhase = "ln -s $src $out";
-        src = pkgs.fetchgit {
-          rev = sha256map.${name}.rev;
-          sha256 = sha256map.${name}.sha256;
-          url = dep.repo;
-        };
+        src = extraSources.${name} or
+          (
+            pkgs.fetchgit {
+              rev = sha256map.${name}.rev;
+              sha256 = sha256map.${name}.sha256;
+              url = dep.repo;
+            }
+          );
       }
     );
 

@@ -32,6 +32,7 @@
       projectFor = pkgs: pkgs.spago-nix.spagoProject {
         name = "spago-nix-example";
         src = ./.;
+        extraSources = { inherit (inputs) lattice properties; };
         shell = {
           tools = [ "psa" ];
         };
@@ -39,7 +40,6 @@
           packagesDhall = ./packages.dhall;
           spagoDhall = ./spago.dhall;
         };
-        sha256map = pkgs.spago-nix.utils.makeSha256map inputs;
       };
       flakeFor = system: (projectFor (nixpkgsFor system)).flake;
     in
