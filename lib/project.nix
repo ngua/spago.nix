@@ -335,6 +335,33 @@ let
     '';
   };
 
+  # Bundle a module, corresponding to `spago bundle-module`
+  bundleModule =
+    {
+      # The main Purescript entrypoint
+      main ? "Main"
+      # The file to write to, corresponds to `--to` flag
+    , to ? "index.js"
+      # Generated `node_modules`. Can be explicitly passed to have better control
+      # over individual project components
+    , nodeModules ? projectNodeModules
+    , ...
+    }@args:
+    pkgs.runCommand ''${args.name or "${name}-bundle-module"}''
+      {
+        nativeBuildInputs = [ output compiler eps.spago pkgs.git ];
+      }
+      ''
+        ${prepareFakeSpagoEnv}
+        cp -r ${output}/* .
+        cp -r ${installed} .spago
+        chmod -R +rwx .
+
+        mkdir $out
+        spago bundle-module --no-build --no-install -m "${main}" \
+          --to $out/${to}
+      '';
+
   # Make a `devShell` from the options provided via `spagoProject.shell`,
   # all of which have default options
   mkDevShell =
@@ -381,6 +408,7 @@ let
     };
 in
 {
+  # These can be generated for users
   flake = rec {
     devShells.default = mkDevShell shell;
 
@@ -391,4 +419,8 @@ in
       nodeModules = projectNodeModules;
     };
   };
+
+  # Because Spago offers no way to describing a project's structure and individual
+  # components, we cannot generate these for users
+  inherit bundleModule;
 }
