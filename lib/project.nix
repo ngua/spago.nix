@@ -342,9 +342,6 @@ let
       main ? "Main"
       # The file to write to, corresponds to `--to` flag
     , to ? "index.js"
-      # Generated `node_modules`. Can be explicitly passed to have better control
-      # over individual project components
-    , nodeModules ? projectNodeModules
     , ...
     }@args:
     pkgs.runCommand ''${args.name or "${name}-bundle-module"}''
