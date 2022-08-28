@@ -335,6 +335,32 @@ let
     '';
   };
 
+
+  # Bundle a module, corresponding to `spago bundle-module`
+  bundle =
+    { type
+    , main ? "Main"
+      # The file to write to, corresponds to `--to` flag
+    , to ? "index.js"
+    , ...
+    }@args:
+      assert lib.assertOneOf "bundle-type" type [ "app" "module" ];
+
+      pkgs.runCommand ''${args.name or "${name}-bundle-${type}"}''
+        {
+          nativeBuildInputs = [ output compiler eps.spago pkgs.git ];
+        }
+        ''
+          ${prepareFakeSpagoEnv}
+          cp -r ${output}/* .
+          cp -r ${installed} .spago
+          chmod -R +rwx .
+
+          mkdir $out
+          spago bundle-${type} --no-build --no-install -m "${main}" \
+            --to $out/${to}
+        '';
+
   # Bundle a module, corresponding to `spago bundle-module`
   bundleModule =
     {
@@ -343,21 +369,18 @@ let
       # The file to write to, corresponds to `--to` flag
     , to ? "index.js"
     , ...
-    }@args:
-    pkgs.runCommand ''${args.name or "${name}-bundle-module"}''
-      {
-        nativeBuildInputs = [ output compiler eps.spago pkgs.git ];
-      }
-      ''
-        ${prepareFakeSpagoEnv}
-        cp -r ${output}/* .
-        cp -r ${installed} .spago
-        chmod -R +rwx .
+    }@args: bundle ({ type = "module"; } // args);
 
-        mkdir $out
-        spago bundle-module --no-build --no-install -m "${main}" \
-          --to $out/${to}
-      '';
+  # Bundle an app, corresponding to `spago bundle-app`
+  bundleApp =
+    {
+      # The main Purescript entrypoint
+      main ? "Main"
+      # The file to write to, corresponds to `--to` flag
+    , to ? "index.js"
+    , ...
+    }@args:
+    bundle ({ type = "app"; } // args);
 
   # Make a `devShell` from the options provided via `spagoProject.shell`,
   # all of which have default options
@@ -419,5 +442,5 @@ in
 
   # Because Spago offers no way to describing a project's structure and individual
   # components, we cannot generate these for users
-  inherit bundleModule;
+  inherit bundleModule bundleApp;
 }
