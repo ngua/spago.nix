@@ -35,10 +35,6 @@
         shell = {
           tools = [ "psa" ];
         };
-        buildConfig = {
-          packagesDhall = ./packages.dhall;
-          spagoDhall = ./spago.dhall;
-        };
       };
       flakeFor = system: (projectFor (nixpkgsFor system)).flake;
     in

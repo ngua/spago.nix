@@ -50,12 +50,7 @@
   #   - `package.json`
   #   - `packages.json`
   # These can be derived from the `src`, but can also be explicitly passed
-, buildConfig ? {
-    packagesDhall = /. + src + "/packages.dhall";
-    spagoDhall = /. + src + "/spago.dhall";
-    packagesJson = /. + src + "/packages.json";
-    packageLock = /. + src + "/package-lock.json";
-  }
+, buildConfig ? { }
   # Turns on the `--strict` during compilation, e.g. `psa --strict ...`
 , strict ? true
   # List of warning types to silence
@@ -66,6 +61,11 @@
 }:
 let
   inherit (pkgs) lib;
+
+  packagesDhall = buildConfig.packagesDhall or /. + src + "/packages.dhall";
+  spagoDhall = buildConfig.spagoDhall or /. + src + "/spago.dhall";
+  packagesJson = buildConfig.packagesJson or /. + src + "/packages.json";
+  packageLock = buildConfig.packageLock or /. + src + "/package-lock.json";
 
   eps = import inputs.easy-purescript-nix { inherit pkgs; };
 
@@ -87,7 +87,7 @@ let
         }
         ''
           mkdir $out
-          pure-spago-nix extract ${buildConfig.packagesDhall} > $out/default.nix
+          pure-spago-nix extract ${packagesDhall} > $out/default.nix
         ''
     );
 
@@ -190,7 +190,7 @@ let
         ''
           ${prepareFakeSpagoEnv}
 
-          cp ${buildConfig.spagoDhall} ./spago.dhall
+          cp ${spagoDhall} ./spago.dhall
           cp ${fakePackagesDhall}/packages.dhall .
           mkdir $out
           spago ls deps -t --json |
@@ -265,7 +265,7 @@ let
 
       mkdir $out && cd $out
       cp ${fakePackagesDhall}/packages.dhall .
-      cp ${buildConfig.spagoDhall} ./spago.dhall
+      cp ${spagoDhall} ./spago.dhall
       cp -r ${installed} .spago
       find .spago -exec touch -m {} +
       spago build --no-install --quiet
