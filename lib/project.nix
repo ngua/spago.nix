@@ -414,14 +414,19 @@ let
           export NODE_PATH="${nodeModules}/lib/node_modules"
           export PATH="${nodeModules}/bin:$PATH"
         ''
-        + (
+        +
+        (
+          # FIXME
+          # Ensure that `psci-support` is always in `installed`, then we can
+          # symlink `.spago` again (other `spago repl` will try to write to it)
           lib.optionalString install
             ''
-              dest=./.spago
-              if [ -L "$dest" ]; then
-                unlink "$dest"
+              if [[ -d .spago ]]; then
+                rm -rf .spago
               fi
-              ln -s ${installed} ./.spago
+              mkdir .spago
+              cp -r ${installed}/* ./.spago
+              chmod +rwx -R .spago
             ''
         )
         + shellHook;
