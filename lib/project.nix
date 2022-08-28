@@ -57,6 +57,9 @@
 , censorCodes ? [ ]
   # If `true`, `npm install` will only write to `package-lock.json`
 , packageLockOnly ? true
+  # If `true`, the project's generate `node_modules` will also contain all
+  # `devDependencies`
+, development ? true
 , ...
 }:
 let
@@ -64,7 +67,7 @@ let
 
   packagesDhall = buildConfig.packagesDhall or /. + src + "/packages.dhall";
   spagoDhall = buildConfig.spagoDhall or /. + src + "/spago.dhall";
-  packagesJson = buildConfig.packagesJson or /. + src + "/packages.json";
+  packageJson = buildConfig.packageJson or /. + src + "/package.json";
   packageLock = buildConfig.packageLock or /. + src + "/package-lock.json";
 
   eps = import inputs.easy-purescript-nix { inherit pkgs; };
@@ -90,6 +93,38 @@ let
           pure-spago-nix extract ${packagesDhall} > $out/default.nix
         ''
     );
+
+  projectNodeModules =
+    let
+      nodeEnv = import
+        (
+          pkgs.runCommand "node-modules-${name}"
+            {
+              buildInputs = [ pkgs.nodePackages.node2nix ];
+            }
+            ''
+              mkdir $out && cd $out
+              cp ${packageLock} ./package-lock.json
+              cp ${packageJson} ./package.json
+              node2nix ${lib.optionalString development "--development" } \
+                --lock ./package-lock.json -i ./package.json
+            ''
+        )
+        {
+          inherit pkgs nodejs; inherit (pkgs) system;
+        };
+      modules = pkgs.callPackage
+        (
+          _:
+          nodeEnv // {
+            shell = nodeEnv.shell.override {
+              # see https://github.com/svanderburg/node2nix/issues/198
+              buildInputs = [ pkgs.nodePackages.node-gyp-build ];
+            };
+          }
+        );
+    in
+    (modules { }).shell.nodeDependencies;
 
   # Get the correct version of the `purs` compiler
   compiler =
@@ -313,6 +348,9 @@ let
       # the `devShell`'s `shellHook`
     , install ? true
     , shellHook ? ""
+      # Generated `node_modules`. Can be explicitly passed to have better control
+      # over individual project components
+    , nodeModules ? projectNodeModules
     }:
     pkgs.mkShell {
       inherit packages;
@@ -326,6 +364,8 @@ let
       shellHook =
         ''
           ${lib.optionalString packageLockOnly "export NPM_CONFIG_PACKAGE_LOCK_ONLY=true"}
+          export NODE_PATH="${nodeModules}/lib/node_modules"
+          export PATH="${nodeModules}/bin:$PATH"
         ''
         + (
           lib.optionalString install
@@ -346,6 +386,9 @@ in
 
     devShell = devShells.default;
 
-    packages = { inherit output; };
+    packages = {
+      inherit output;
+      nodeModules = projectNodeModules;
+    };
   };
 }
