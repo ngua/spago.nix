@@ -40,16 +40,28 @@
   #   };
   # ```
 , sha256map ? { }
+  # The specific version of `nodejs` to use. Will be used throughout the
+  # project components and the shell
+, nodejs ? pkgs.nodejs-14_x
 , shell ? { }
-  # Paths to configuration files describing the build: `packages.dhall`,
-  # etc... These can be derived from the `src`, but can also be explicitly
-  # passed
+  # Paths to configuration files describing the build:
+  #   - `packages.dhall`
+  #   - `spago.dhall`
+  #   - `package.json`
+  #   - `packages.json`
+  # These can be derived from the `src`, but can also be explicitly passed
 , buildConfig ? {
     packagesDhall = /. + src + "/packages.dhall";
     spagoDhall = /. + src + "/spago.dhall";
+    packagesJson = /. + src + "/packages.json";
+    packageLock = /. + src + "/package-lock.json";
   }
+  # Turns on the `--strict` during compilation, e.g. `psa --strict ...`
 , strict ? true
+  # List of warning types to silence
 , censorCodes ? [ ]
+  # If `true`, `npm install` will only write to `package-lock.json`
+, packageLockOnly ? true
 , ...
 }:
 let
@@ -307,11 +319,15 @@ let
       nativeBuildInputs = [
         eps.spago
         compiler
+        nodejs
       ]
       # TODO handle different versions of tools, make `tools` a set?
       ++ builtins.map (tool: eps.${tool}) tools;
       shellHook =
-        (
+        ''
+          ${lib.optionalString packageLockOnly "export NPM_CONFIG_PACKAGE_LOCK_ONLY=true"}
+        ''
+        + (
           lib.optionalString install
             ''
               dest=./.spago
