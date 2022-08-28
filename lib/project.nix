@@ -202,35 +202,64 @@ let
   # Get the correct version of the `purs` compiler
   compiler = eps."purs-${compilerVersion}";
 
-  # Compile all of the project's dependencies and sources. Unfortunately,
-  # we can't use `spago` here -- it will _always_ attempt to connect to the
-  # network, even if we try to trick it by linking the pre-installed
-  # packages to its expected cache location (`$XDG_CACHE_HOME/spago`)
+  # Compile all of the project's dependencies and sources. We can use `spago`
+  # by tricking it
+  #
+  # NOTE: This also copies all of the project sources into the resulting
+  # derivation. `purs` doesn't provide a way to include any external files to its
+  # `output` (and if we attempted to refer to absolute paths from the project-wide
+  # `src` argument, they would be wrong)
+  #
+  # TODO see if we can compile the dependencies once instead and then copy
+  # the `output` directory
   output =
     let
       spagoGlobs = builtins.toString (
         builtins.map utils.getSpagoGlob (builtins.attrValues spagoPkgs)
       );
-      psaCommand = builtins.concatStringsSep " "
+      psaArgs = builtins.concatStringsSep " "
         [
-          ''psa ${pkgs.lib.optionalString strict "--strict" }''
+          (pkgs.lib.optionalString strict "--strict")
           (
             lib.optionalString
               (censorCodes != [ ])
               ''--censor-codes=${builtins.concatStringsSep "," censorCodes}''
           )
-          ''--censor-lib --is-lib=.spago ${spagoGlobs} "./**/*.purs"''
+          "--censor-lib --is-lib=.spago"
         ];
+      # Spago doesn't provide a way to pass arguments to `psa` (which provides
+      # for a nicer compilation experience than `purs` directly, so we want to
+      # use it). We can shadow the real `psa` executable by wrapping it in a
+      # shell script and intercepting the arguments passed to it from
+      # `spago build` while also adding our own
+      fakePsa = pkgs.writeShellApplication {
+        name = "psa";
+        runtimeInputs = [ eps.psa ];
+        text = ''
+          psa ${psaArgs} "$@"
+        '';
+      };
     in
     pkgs.runCommand "${name}-output"
       {
-        nativeBuildInputs = [ compiler eps.psa ];
+        nativeBuildInputs = [
+          compiler
+          fakePsa
+          eps.spago
+          fakePackagesDhall
+          # `spago` invokes `git`
+          pkgs.git
+        ];
       }
       ''
+        ${prepareFakeSpagoEnv}
+
         mkdir $out && cd $out
         cp -r ${src}/* .
+        chmod -R +rwx .
+        cp ${fakePackagesDhall}/packages.dhall .
         ln -s ${installed} .spago
-        ${psaCommand}
+        spago build --no-install
       '';
 
   # Make a `devShell` from the options provided via `spagoProject.shell`,
