@@ -1,14 +1,8 @@
 { pkgs, inputs, self, ... }:
 
 let
-  inherit (pkgs) lib;
-  utils = import ./utils.nix { inherit pkgs; };
   spagoProject = import ./project.nix {
-    inherit self inputs pkgs utils;
+    inherit self inputs pkgs;
   };
-
 in
-{
-  inherit spagoProject;
-  utils = { };
-}
+{ inherit spagoProject; }

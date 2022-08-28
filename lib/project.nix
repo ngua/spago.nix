@@ -1,4 +1,4 @@
-{ self, inputs, pkgs, utils, ... }:
+{ self, inputs, pkgs, ... }:
 { name
 , src
   # An attribute set mapping dependency names to their source (e.g. from your
@@ -57,13 +57,15 @@ let
 
   eps = import inputs.easy-purescript-nix { inherit pkgs; };
 
+  utils = import ./utils.nix { inherit pkgs; };
+
   # Generate the project specification from a `packages.dhall` through the
   # magic of IFD.
   #
   # This will contain an `upstream` package set (e.g. `psc-0.15.3`) and a list
   # of `additional` dependencies. We can then import it to generate the various
   # derivations to build the project, create a suitable `devShell`, etc...
-  projectPlanFor = name: packages: import
+  plan = import
     (
       pkgs.runCommand
         "${name}-plan"
@@ -72,25 +74,27 @@ let
         }
         ''
           mkdir $out
-          pure-spago-nix extract ${packages} > $out/default.nix
+          pure-spago-nix extract ${buildConfig.packagesDhall} > $out/default.nix
         ''
     );
 
-  # Get the second component from the specified upstream package set
-  # e.g. `psc-0.14.5-20211116` -> `0.14.5`
-  #
-  # This can be used as the compiler version
-  compilerVersionFor = plan: builtins.elemAt
-    (lib.strings.splitString "-" plan.upstream.path)
-    1;
-
-  plan = projectPlanFor name buildConfig.packagesDhall;
-
-  # First convert the compiler version from above into a format
-  # suitable for importing from `easy-purescript-nix`
-  compilerVersion = builtins.replaceStrings
-    [ "." ] [ "_" ]
-    (compilerVersionFor plan);
+  # Get the correct version of the `purs` compiler
+  compiler =
+    let
+      # Get the second component from the specified upstream package set
+      # e.g. `psc-0.14.5-20211116` -> `0.14.5`, then convert it into a format
+      # suitable for importing from `easy-purescript-nix`
+      version = builtins.replaceStrings
+        [ "." ] [ "_" ]
+        (
+          builtins.elemAt
+            (
+              lib.strings.splitString "-" plan.upstream.path
+            )
+            1
+        );
+    in
+    eps."purs-${version}";
 
   # Get the upstream package set
   upstream = import (../package-sets + "/${plan.upstream.path}")
@@ -184,9 +188,6 @@ let
             tr ',' ' ' > $out/default.nix
         ''
     );
-
-  # Get the correct version of the `purs` compiler
-  compiler = eps."purs-${compilerVersion}";
 
   # Compile all of the project's dependencies and sources. We can use `spago`
   # by tricking it
