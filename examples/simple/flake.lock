@@ -96,17 +96,17 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1661664211,
-        "narHash": "sha256-qv4bcZLs4BfY72qJUR5FMMSOH4GYRA+n4RRdyl3zJP8=",
-        "ref": "master",
-        "rev": "36174c9cdf05eea3ada632bfda87108ad46d0e0a",
-        "revCount": 47,
-        "type": "git",
-        "url": "file:///home/rory/projects/spago.nix"
+        "lastModified": 1661685612,
+        "narHash": "sha256-13BfBYEEE3onbCgsPmuevEMLpdUMEuQT81xlZLr0dcY=",
+        "owner": "ngua",
+        "repo": "spago.nix",
+        "rev": "6446d025bfa280564fb5c62ba9e59f125a1dca91",
+        "type": "github"
       },
       "original": {
-        "type": "git",
-        "url": "file:///home/rory/projects/spago.nix"
+        "owner": "ngua",
+        "repo": "spago.nix",
+        "type": "github"
       }
     }
   },

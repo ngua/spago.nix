@@ -2,8 +2,7 @@
   description = "Simple purescript.nix example";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    # TODO use remote once it exists
-    spago-nix.url = "git+file:///home/rory/projects/spago.nix";
+    spago-nix.url = "github:ngua/spago.nix";
 
     # For use with the `sha256map` to create a project
     lattice = {
