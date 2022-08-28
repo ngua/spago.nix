@@ -45,7 +45,10 @@
 
       packages = perSystem (system: {
         inherit ((flakeFor system).packages) output;
-        example-bundle = (projectFor (nixpkgsFor system)).bundleModule {
+        bundled-module = (projectFor (nixpkgsFor system)).bundleModule {
+          main = "Main";
+        };
+        bundled-app = (projectFor (nixpkgsFor system)).bundleApp {
           main = "Main";
         };
       });
