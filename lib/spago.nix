@@ -10,5 +10,5 @@ let
 in
 {
   inherit spagoProject;
-  utils = { inherit (utils) makeSha256map; };
+  utils = { };
 }

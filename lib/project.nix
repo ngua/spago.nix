@@ -161,7 +161,7 @@ let
   # similar to how `spago install` works
   allPkgs = lib.attrsets.recursiveUpdate upstream additional;
   spagoPkgs = lib.attrsets.genAttrs lsDeps (dep: allPkgs.${dep});
-  cached = utils.installOrCache "cache-spago-deps" allPkgs;
+  cached = utils.installOrCache "cache-spago-upstream" allPkgs;
   installed = utils.installOrCache "install-spago-deps" spagoPkgs;
 
   # This is a necessary step to get the exact project dependencies, including
@@ -200,9 +200,6 @@ let
   # the `output` directory
   output =
     let
-      spagoGlobs = builtins.toString (
-        builtins.map utils.getSpagoGlob (builtins.attrValues spagoPkgs)
-      );
       psaArgs = builtins.concatStringsSep " "
         [
           (pkgs.lib.optionalString strict "--strict")
