@@ -302,7 +302,7 @@ in
   flake = rec {
     devShells.default = mkDevShell shell;
 
-    devShell = devShell.default;
+    devShell = devShells.default;
 
     packages = { inherit output; };
   };
