@@ -51,6 +51,9 @@
         bundled-app = (projectFor (nixpkgsFor system)).bundleApp {
           main = "Main";
         };
+        run-app = (projectFor (nixpkgsFor system)).runApp {
+          main = "Main";
+        };
       });
 
     };
