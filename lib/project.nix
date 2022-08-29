@@ -94,7 +94,7 @@ let
         ''
     );
 
-  projectNodeModules =
+  nodeModules =
     let
       nodeEnv = import
         (
@@ -395,10 +395,7 @@ let
       # the `devShell`'s `shellHook`
     , install ? true
     , shellHook ? ""
-      # Generated `node_modules`. Can be explicitly passed to have better control
-      # over individual project components
-    , nodeModules ? projectNodeModules
-    }:
+    }@args:
     pkgs.mkShell {
       inherit packages;
       nativeBuildInputs = [
@@ -409,10 +406,13 @@ let
       # TODO handle different versions of tools, make `tools` a set?
       ++ builtins.map (tool: eps.${tool}) tools;
       shellHook =
+        let
+          modules = args.nodeModules or nodeModules;
+        in
         ''
           ${lib.optionalString packageLockOnly "export NPM_CONFIG_PACKAGE_LOCK_ONLY=true"}
-          export NODE_PATH="${nodeModules}/lib/node_modules"
-          export PATH="${nodeModules}/bin:$PATH"
+          export NODE_PATH="${modules}/lib/node_modules"
+          export PATH="${modules}/bin:$PATH"
         ''
         +
         (
@@ -447,8 +447,7 @@ in
     devShell = devShells.default;
 
     packages = {
-      inherit output;
-      nodeModules = projectNodeModules;
+      inherit output nodeModules;
     };
   };
 
