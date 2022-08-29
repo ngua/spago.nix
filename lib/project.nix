@@ -345,7 +345,6 @@ let
     , ...
     }@args:
       assert lib.assertOneOf "bundle-type" type [ "app" "module" ];
-
       pkgs.runCommand ''${args.name or "${name}-bundle-${type}"}''
         {
           nativeBuildInputs = [ output compiler eps.spago pkgs.git ];
@@ -381,6 +380,35 @@ let
     , ...
     }@args:
     bundle ({ type = "app"; } // args);
+
+  # Directly run an application corresponding to the provided Purescript main
+  # module
+  runApp =
+    {
+      # The main Purescript entrypoint
+      main ? "Main"
+      # Extra environment variables
+    , env ? { }
+    , ...
+    }@args:
+    let
+      modules = args.nodeModules or nodeModules;
+    in
+    pkgs.runCommand ''${args.name or "${name}-app"}''
+      (
+        {
+          buildInputs = [ nodejs output ] ++ args.buildInputs or [ ];
+          NODE_PATH = "${nodeModules}/lib/node_modules";
+        }
+        // env
+      )
+      # Since the project has already been built entirely, we can just use
+      # Node directly to run the application
+      ''
+        cp -r ${output}/* .
+        node -e 'require("./output/${main}").main()'
+        touch $out
+      '';
 
   # Make a `devShell` from the options provided via `spagoProject.shell`,
   # all of which have default options
@@ -453,5 +481,5 @@ in
 
   # Because Spago offers no way to describing a project's structure and individual
   # components, we cannot generate these for users
-  inherit bundleModule bundleApp;
+  inherit bundleModule bundleApp runApp;
 }
