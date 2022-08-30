@@ -381,18 +381,18 @@ let
     }@args:
     bundle ({ type = "app"; } // args);
 
-  # Directly run an application corresponding to the provided Purescript main
-  # module
-  runApp =
-    {
-      # The main Purescript entrypoint
-      main ? "Main"
-      # Extra environment variables
+  # Run a Purescript application with or without arguments
+  runApp' =
+    { main ? "Main"
     , env ? { }
+    , arguments ? [ ]
+    , command ? ""
     , ...
     }@args:
     let
       modules = args.nodeModules or nodeModules;
+      sepSpace = builtins.concatStringsSep " ";
+      cliArgs = sepSpace [ command (sepSpace arguments) ];
     in
     pkgs.runCommand ''${args.name or "${name}-app"}''
       (
@@ -406,9 +406,39 @@ let
       # Node directly to run the application
       ''
         cp -r ${output}/* .
-        node -e 'require("./output/${main}").main()'
+        node -e 'require("./output/${main}").main()' ${cliArgs}
         touch $out
       '';
+
+  # Directly run an application corresponding to the provided Purescript main
+  # module
+  runApp =
+    {
+      # The main Purescript entrypoint
+      main ? "Main"
+      # Extra environment variables
+    , env ? { }
+    , ...
+    }@args: runApp' args;
+
+
+  # Directly run an application corresponding to the provided Purescript main
+  # module, with a command name and arguments
+  #
+  # NOTE: You must provide the command name as Node's `process.argv` includes
+  # this as the first argument to the running application
+  runAppWithArgs =
+    {
+      # The main Purescript entrypoint
+      main ? "Main"
+      # Extra environment variables
+    , env ? { }
+    , command
+    , arguments ? [ ]
+    , ...
+    }@args:
+      assert lib.asserts.assertMsg (command != "") "Command name cannot be empty";
+      runApp' args;
 
   # Make a `devShell` from the options provided via `spagoProject.shell`,
   # all of which have default options
