@@ -381,9 +381,9 @@ let
     }@args:
     bundle ({ type = "app"; } // args);
 
-  # Run a Purescript application with or without arguments
-  runApp' =
-    { main ? "Main"
+  # Run a Purescript application as a test with or without arguments
+  runTest' =
+    { testMain ? "Test.Main"
     , env ? { }
     , arguments ? [ ]
     , command ? ""
@@ -394,7 +394,7 @@ let
       sepSpace = builtins.concatStringsSep " ";
       cliArgs = sepSpace [ command (sepSpace arguments) ];
     in
-    pkgs.runCommand ''${args.name or "${name}-app"}''
+    pkgs.runCommand ''${args.name or "${name}-test"}''
       (
         {
           buildInputs = [ nodejs output ] ++ args.buildInputs or [ ];
@@ -410,27 +410,26 @@ let
         touch $out
       '';
 
-  # Directly run an application corresponding to the provided Purescript main
-  # module
-  runApp =
+  # Directly run a test corresponding to the provided Purescript main module
+  runTest =
     {
       # The main Purescript entrypoint
-      main ? "Main"
+      testMain ? "Test.Main"
       # Extra environment variables
     , env ? { }
     , ...
-    }@args: runApp' args;
+    }@args: runTest' args;
 
 
-  # Directly run an application corresponding to the provided Purescript main
-  # module, with a command name and arguments
+  # Directly run a test corresponding to the provided Purescript main module,
+  # with a command name and arguments
   #
   # NOTE: You must provide the command name as Node's `process.argv` includes
   # this as the first argument to the running application
-  runAppWithArgs =
+  runTestWithArgs =
     {
       # The main Purescript entrypoint
-      main ? "Main"
+      testMain ? "Test.Main"
       # Extra environment variables
     , env ? { }
     , command
@@ -438,7 +437,7 @@ let
     , ...
     }@args:
       assert lib.asserts.assertMsg (command != "") "Command name cannot be empty";
-      runApp' args;
+      runTest' args;
 
   # Make a `devShell` from the options provided via `spagoProject.shell`,
   # all of which have default options
@@ -511,5 +510,5 @@ in
 
   # Because Spago offers no way to describing a project's structure and individual
   # components, we cannot generate these for users
-  inherit bundleModule bundleApp runApp;
+  inherit bundleModule bundleApp runTest runTestWithArgs;
 }
