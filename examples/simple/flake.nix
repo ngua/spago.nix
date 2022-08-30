@@ -43,18 +43,22 @@
         inherit ((flakeFor system).devShells) default;
       });
 
-      packages = perSystem (system: {
-        inherit ((flakeFor system).packages) output;
-        bundled-module = (projectFor (nixpkgsFor system)).bundleModule {
-          main = "Main";
-        };
-        bundled-app = (projectFor (nixpkgsFor system)).bundleApp {
-          main = "Main";
-        };
-        run-app = (projectFor (nixpkgsFor system)).runApp {
-          main = "Main";
-        };
-      });
+      packages = perSystem (system:
+        let
+          project = projectFor (nixpkgsFor system);
+        in
+        {
+          inherit ((flakeFor system).packages) output;
+          bundled-module = project.bundleModule {
+            main = "Main";
+          };
+          bundled-app = project.bundleApp {
+            main = "Main";
+          };
+          node-app = project.nodeApp {
+            main = "Main";
+          };
+        });
 
     };
 }
