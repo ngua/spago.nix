@@ -381,6 +381,16 @@ let
     }@args:
     bundle ({ type = "app"; } // args);
 
+  callNodeWithArgs = { output, arguments, command, main }:
+    let
+      sepSpace = builtins.concatStringsSep " ";
+      nodeArgs = sepSpace [ command (sepSpace arguments) ];
+    in
+    ''node -e 'require("./output/${main}").main()' ${nodeArgs}'';
+
+  nameFromMain = main: builtins.replaceStrings [ "." ] [ "-" ]
+    (lib.strings.toLower main);
+
   # Run a Purescript application as a test with or without arguments
   runTest' =
     { testMain ? "Test.Main"
@@ -391,10 +401,8 @@ let
     }@args:
     let
       modules = args.nodeModules or nodeModules;
-      sepSpace = builtins.concatStringsSep " ";
-      cliArgs = sepSpace [ command (sepSpace arguments) ];
     in
-    pkgs.runCommand ''${args.name or "${name}-test"}''
+    pkgs.runCommand ''${args.name or "${name}-test-${nameFromMain testMain}"}''
       (
         {
           buildInputs = [ nodejs output ] ++ args.buildInputs or [ ];
@@ -406,7 +414,7 @@ let
       # Node directly to run the application
       ''
         cp -r ${output}/* .
-        node -e 'require("./output/${main}").main()' ${cliArgs}
+        ${callNodeWithArgs { inherit output arguments command; main = testMain; }}
         touch $out
       '';
 
@@ -438,6 +446,64 @@ let
     }@args:
       assert lib.asserts.assertMsg (command != "") "Command name cannot be empty";
       runTest' args;
+
+  # Create an executable from a Purescript main module and install it to the
+  # given path
+  nodeApp' =
+    {
+      # The main Purescript entrypoint
+      main ? "Main"
+      # Extra environment variables; will be `export`ed in the script
+    , env ? { }
+    , arguments ? [ ]
+    , command ? ""
+    , ...
+    }@args: pkgs.writeShellApplication {
+      name = args.name or "${name}-app-${nameFromMain main}";
+      runtimeInputs = [ nodejs ];
+      text =
+        let
+          modules = args.nodeModules or nodeModules;
+          exportEnv = builtins.concatStringsSep "\n"
+            (lib.mapAttrsToList (k: v: "export ${k}=${v}") env);
+        in
+        ''
+          export NODE_PATH="${modules}/lib/node_modules"
+          ${exportEnv}
+
+          cd ${output}
+          ${callNodeWithArgs { inherit output main arguments command; }}
+        '';
+    };
+
+  # Create an executable from a Purescript main module and install it to the
+  # given path.
+  nodeApp =
+    {
+      # The main Purescript entrypoint
+      main ? "Main"
+      # Extra environment variables; will be `export`ed in the script
+    , env ? { }
+    , ...
+    }@args: nodeApp' args;
+
+  # Directly run a test corresponding to the provided Purescript main module,
+  # with a command name and arguments
+  #
+  # NOTE: You must provide the command name as Node's `process.argv` includes
+  # this as the first argument to the running application
+  nodeAppWithArgs =
+    {
+      # The main Purescript entrypoint
+      main ? "Main"
+      # Extra environment variables; will be `export`ed in the script
+    , env ? { }
+    , command
+    , arguments ? [ ]
+    , ...
+    }@args:
+      assert lib.asserts.assertMsg (command != "") "Command name cannot be empty";
+      nodeApp' args;
 
   # Make a `devShell` from the options provided via `spagoProject.shell`,
   # all of which have default options
@@ -510,5 +576,6 @@ in
 
   # Because Spago offers no way to describing a project's structure and individual
   # components, we cannot generate these for users
-  inherit bundleModule bundleApp runTest runTestWithArgs;
+  inherit bundleModule bundleApp runTest runTestWithArgs
+    nodeApp nodeAppWithArgs;
 }
