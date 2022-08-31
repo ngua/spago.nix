@@ -48,7 +48,7 @@
   #   - `packages.dhall`
   #   - `spago.dhall`
   #   - `package.json`
-  #   - `packages.json`
+  #   - `package-lock.json`
   # These can be derived from the `src`, but can also be explicitly passed
 , buildConfig ? { }
   # Turns on the `--strict` during compilation, e.g. `psa --strict ...`
@@ -262,11 +262,8 @@ let
 
   # Helper for derivations calling `spago build` or similar
   build =
-    {
-      # The command to run
-      text
-      # Any additional inputs to the derivation
-    , extraInputs ? [ ]
+    { text # The command to run
+    , extraInputs ? [ ] # Any additional inputs to the derivation
       # Only used for naming the resulting derivation. Corresponds to the
       # `--deps-only` flag used by `spago-build`
     , depsOnly ? false
@@ -338,7 +335,7 @@ let
 
   # Bundle a module, corresponding to `spago bundle-module`
   bundle =
-    { type
+    { type # `module` or `app`
     , main ? "Main"
       # The file to write to, corresponds to `--to` flag
     , to ? "index.js"
@@ -362,11 +359,8 @@ let
 
   # Bundle a module, corresponding to `spago bundle-module`
   bundleModule =
-    {
-      # The main Purescript entrypoint
-      main ? "Main"
-      # The file to write to, corresponds to `--to` flag
-    , to ? "index.js"
+    { main ? "Main" # The main Purescript entrypoint
+    , to ? "index.js" # The file to write to, corresponds to `--to` flag
     , ...
     }@args: bundle ({ type = "module"; } // args);
 
@@ -413,18 +407,15 @@ let
       # Since the project has already been built entirely, we can just use
       # Node directly to run the application
       ''
-        cp -r ${output}/* .
+        cd ${output}
         ${callNodeWithArgs { inherit output arguments command; main = testMain; }}
         touch $out
       '';
 
   # Directly run a test corresponding to the provided Purescript main module
   runTest =
-    {
-      # The main Purescript entrypoint
-      testMain ? "Test.Main"
-      # Extra environment variables
-    , env ? { }
+    { testMain ? "Test.Main" # The main Purescript entrypoint
+    , env ? { } # Extra environment variables
     , ...
     }@args: runTest' args;
 
@@ -435,11 +426,8 @@ let
   # NOTE: You must provide the command name as Node's `process.argv` includes
   # this as the first argument to the running application
   runTestWithArgs =
-    {
-      # The main Purescript entrypoint
-      testMain ? "Test.Main"
-      # Extra environment variables
-    , env ? { }
+    { testMain ? "Test.Main" # The main Purescript entrypoint
+    , env ? { } # Extra environment variables
     , command
     , arguments ? [ ]
     , ...
@@ -450,10 +438,7 @@ let
   # Create an executable from a Purescript main module and install it to the
   # given path
   nodeApp' =
-    {
-      # The main Purescript entrypoint
-      main ? "Main"
-      # Extra environment variables; will be `export`ed in the script
+    { main ? "Main"
     , env ? { }
     , arguments ? [ ]
     , command ? ""
@@ -479,10 +464,11 @@ let
   # Create an executable from a Purescript main module and install it to the
   # given path.
   nodeApp =
-    {
-      # The main Purescript entrypoint
-      main ? "Main"
-      # Extra environment variables; will be `export`ed in the script
+    { main ? "Main" # The main Purescript entrypoint
+      # Extra environment variables; will be `export`ed in the script.
+      #
+      # NOTE: You might wish to use `lib.strings.escapeShellArg` as this is not
+      # done automatically for you
     , env ? { }
     , ...
     }@args: nodeApp' args;
@@ -493,23 +479,25 @@ let
   # NOTE: You must provide the command name as Node's `process.argv` includes
   # this as the first argument to the running application
   nodeAppWithArgs =
-    {
-      # The main Purescript entrypoint
-      main ? "Main"
-      # Extra environment variables; will be `export`ed in the script
+    { main ? "Main" # The main Purescript entrypoint
+      # Extra environment variables; will be `export`ed in the script.
+      #
+      # NOTE: You might wish to use `lib.strings.escapeShellArg` as this is not
+      # done automatically for you
     , env ? { }
     , command
     , arguments ? [ ]
     , ...
     }@args:
-      assert lib.asserts.assertMsg (command != "") "Command name cannot be empty";
+      assert lib.asserts.assertMsg (command != "")
+        "Command name cannot be empty";
       nodeApp' args;
 
   # Make a `devShell` from the options provided via `spagoProject.shell`,
   # all of which have default options
   mkDevShell =
     {
-      # List of purescript development tools available from
+      # List of Purescript development tools available from
       # `easy-purescript-nix`
       tools ? [ ]
       # Extra packages to include in the development environment
@@ -550,6 +538,9 @@ let
             );
           in
           lib.optionalString install
+            # A symlink will be faster, but Spago will always check if `.spago`
+            # is writable when starting the REPL, hence the `cp -r` and `chmod`
+            # invocations
             ''
               if [[ -d .spago ]]; then
                 rm -rf .spago
@@ -575,7 +566,8 @@ in
   };
 
   # Because Spago offers no way to describing a project's structure and individual
-  # components, we cannot generate these for users
+  # components, we cannot generate these for users. They are made available as
+  # functions to generate derivations instead
   inherit bundleModule bundleApp runTest runTestWithArgs
     nodeApp nodeAppWithArgs;
 }
