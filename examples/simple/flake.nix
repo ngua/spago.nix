@@ -1,7 +1,7 @@
 {
   description = "Simple purescript.nix example";
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.follows = "spago-nix/nixpkgs";
     spago-nix.url = "github:ngua/spago.nix";
 
     # For use with the `sha256map` to create a project
@@ -17,13 +17,7 @@
   };
   outputs = { self, nixpkgs, spago-nix, ... }@inputs:
     let
-      supportedSystems = [
-        "x86_64-linux"
-        "x86_64-darwin"
-        "aarch64-linux"
-        "aarch64-darwin"
-      ];
-      perSystem = nixpkgs.lib.genAttrs supportedSystems;
+      perSystem = nixpkgs.lib.genAttrs nixpkgs.lib.systems.flakeExposed;
       nixpkgsFor = system: import nixpkgs {
         inherit system;
         overlays = [ spago-nix.overlays.default ];
@@ -49,16 +43,9 @@
         in
         {
           inherit ((flakeFor system).packages) output;
-          bundled-module = project.bundleModule {
-            main = "Main";
-          };
-          bundled-app = project.bundleApp {
-            main = "Main";
-          };
-          node-app = project.nodeApp {
-            main = "Main";
-          };
+          bundled-module = project.bundleModule { main = "Main"; };
+          bundled-app = project.bundleApp { main = "Main"; };
+          node-app = project.nodeApp { main = "Main"; };
         });
-
     };
 }

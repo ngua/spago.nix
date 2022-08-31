@@ -35,22 +35,6 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1650109093,
-        "narHash": "sha256-tqlnKrAdJktRLXTou9le0oTqrYBAFpGscV5RADdpArU=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "faad370edcb37162401be50d45526f52bb16a713",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixpkgs-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nixpkgs_2": {
-      "locked": {
         "lastModified": 1659753918,
         "narHash": "sha256-EsAYsT9BmKA4DBsFYANyWSRe6DGJg9rr6/5fgXrq9Dc=",
         "owner": "NixOS",
@@ -85,7 +69,10 @@
     "root": {
       "inputs": {
         "lattice": "lattice",
-        "nixpkgs": "nixpkgs",
+        "nixpkgs": [
+          "spago-nix",
+          "nixpkgs"
+        ],
         "properties": "properties",
         "spago-nix": "spago-nix"
       }
@@ -93,14 +80,14 @@
     "spago-nix": {
       "inputs": {
         "easy-purescript-nix": "easy-purescript-nix",
-        "nixpkgs": "nixpkgs_2"
+        "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1661869022,
-        "narHash": "sha256-557EHH9zc9l1ntzPLxPkSmD8o/M7hY2tsDEnpvE93s8=",
+        "lastModified": 1661920710,
+        "narHash": "sha256-qqfIIAwj5N24efAYTUA84+bas6GRO1VTUI3jzztiTIg=",
         "owner": "ngua",
         "repo": "spago.nix",
-        "rev": "c6828ae481900ae43597b077aef7a3d86c0a441e",
+        "rev": "58931d5b7b953f9bb44d4a997e76c8439931300b",
         "type": "github"
       },
       "original": {
