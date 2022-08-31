@@ -41,11 +41,21 @@
         let
           project = projectFor (nixpkgsFor system);
         in
-        {
-          inherit ((flakeFor system).packages) output;
+        (flakeFor system).packages // {
           bundled-module = project.bundleModule { main = "Main"; };
           bundled-app = project.bundleApp { main = "Main"; };
           node-app = project.nodeApp { main = "Main"; };
-        });
+        }
+      );
+
+      apps = perSystem (system:
+        let
+          pkgs = nixpkgsFor system;
+        in
+        {
+          node-app = pkgs.spago-nix.utils.apps.fromNodeApp
+            self.packages.${system}.node-app;
+        }
+      );
     };
 }
