@@ -18,7 +18,7 @@
       hsProjectFor = system: { returnShellEnv ? false }:
         (nixpkgsFor system).haskell.packages.${compiler}.developPackage {
           inherit returnShellEnv;
-          root = "${self}/${hsPackageName}";
+          root = self + "/${hsPackageName}";
         };
     in
     {
