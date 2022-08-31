@@ -60,6 +60,10 @@
   # If `true`, the project's generate `node_modules` will also contain all
   # `devDependencies`
 , development ? true
+  # If `true`, will build docs using default values for options. Even if this
+  # is `false`, you can still use the `buildDocs` builder that is returned from
+  # here
+, withDocs ? true
 , ...
 }:
 let
@@ -243,7 +247,7 @@ let
     let
       psaArgs = builtins.concatStringsSep " "
         [
-          (pkgs.lib.optionalString strict "--strict")
+          (lib.optionalString strict "--strict")
           (
             lib.optionalString
               (censorCodes != [ ])
@@ -493,6 +497,36 @@ let
         "Command name cannot be empty";
       nodeApp' args;
 
+  buildDocs =
+    { depsOnly ? false # If `true`, only build docs for the project dependencies
+    , format ? "html"
+    , ...
+    }@args:
+      assert lib.assertOneOf "format" format [ "html" "markdown" ];
+      let
+      in
+      pkgs.runCommand
+        (
+          args.name or ''${name}${lib.optionalString depsOnly "-deps"}-docs''
+        )
+        {
+          buildInputs = [ compiler eps.spago pkgs.git nodejs ];
+        }
+        ''
+          ${prepareFakeSpagoEnv}
+
+          cp -r ${installed} .spago
+          cp -r ${src}/* .
+          chmod -R +rwx .
+          cp ${fakePackagesDhall}/packages.dhall .
+
+          spago docs --format ${format} ${lib.optionalString depsOnly "--deps-only"}
+
+          mkdir $out
+          mv generated-docs $out
+          mv output $out
+        '';
+
   # Make a `devShell` from the options provided via `spagoProject.shell`,
   # all of which have default options
   mkDevShell =
@@ -562,12 +596,17 @@ in
 
     packages = {
       inherit output nodeModules;
+    } // lib.attrsets.optionalAttrs withDocs {
+      docs = buildDocs { };
     };
   };
 
   # Because Spago offers no way to describing a project's structure and individual
   # components, we cannot generate these for users. They are made available as
   # functions to generate derivations instead
-  inherit bundleModule bundleApp runTest runTestWithArgs
-    nodeApp nodeAppWithArgs;
+  inherit
+    bundleModule bundleApp
+    runTest runTestWithArgs
+    nodeApp nodeAppWithArgs
+    buildDocs;
 }
