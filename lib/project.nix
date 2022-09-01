@@ -1,4 +1,4 @@
-{ self, inputs, pkgs, ... }:
+{ self, inputs, pkgs, utils, ... }:
 { name
 , src
   # An attribute set mapping dependency names to their source (e.g. from your
@@ -75,8 +75,6 @@ let
   packageLock = buildConfig.packageLock or /. + src + "/package-lock.json";
 
   eps = import inputs.easy-purescript-nix { inherit pkgs; };
-
-  utils = import ./utils.nix { inherit pkgs; };
 
   # Generate the project specification from a `packages.dhall` through the
   # magic of IFD.
@@ -171,6 +169,44 @@ let
       }
     );
 
+  # Can be used to emulate `spago install` or to (mostly) create a mock global
+  # package cache (`spago` always expects this)
+  installOrCache = n: ps:
+    let
+      install = ps: pkgs.writeShellApplication {
+        name = "install-spago-pkgs";
+        runtimeInputs = [ ];
+        text = ''
+          set -e
+          echo installing dependencies...
+          ${builtins.toString (builtins.map cpPkg (builtins.attrValues ps))}
+          echo 'done'
+        '';
+      };
+
+      cpPkg = pkg:
+        let
+          target = "./${pkg.name}/${pkg.version}";
+        in
+        ''
+          if [[ ! -e ${target} ]]; then
+            echo "Installing ${target}."
+            mkdir -p ${target}
+            cp --no-preserve=mode,ownership,timestamp -r ${pkg}/* ${target}
+          else
+            echo "${target} already exists. Skipping."
+          fi
+        '';
+    in
+    pkgs.runCommand n
+      {
+        nativeBuildInputs = [ (install ps) ];
+      }
+      ''
+        mkdir $out && cd $out
+        install-spago-pkgs
+      '';
+
   # The following two are necessary to prevent both Dhall and Spago from
   # attempting network connections. The idea is:
   #   - copy the installed Spago packages to a fake `XDG_CACHE_HOME` location
@@ -214,8 +250,8 @@ let
   # similar to how `spago install` works
   allPkgs = lib.attrsets.recursiveUpdate upstream additional;
   spagoPkgs = lib.attrsets.genAttrs lsDeps (dep: allPkgs.${dep});
-  cached = utils.installOrCache "cache-spago-upstream" allPkgs;
-  installed = utils.installOrCache "install-spago-deps" spagoPkgs;
+  cached = installOrCache "cache-spago-upstream" allPkgs;
+  installed = installOrCache "install-spago-deps" spagoPkgs;
 
   # This is a necessary step to get the exact project dependencies, including
   # the transitive dependencies. Otherwise, we will always build the entire
@@ -565,7 +601,7 @@ let
           # This ensures that `psci-support` is always in `installed`, otherwise
           # `spago` will download it
           let
-            installed' = utils.installOrCache "install-spago-deps" (
+            installed' = installOrCache "install-spago-deps" (
               spagoPkgs // lib.attrsets.optionalAttrs
                 (!(spagoPkgs ? psci-support))
                 { inherit (allPkgs) psci-support; }

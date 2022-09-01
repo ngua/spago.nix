@@ -1,9 +1,15 @@
 { pkgs, inputs, self, ... }:
 
-{
-  spagoProject = import ./project.nix { inherit self inputs pkgs; };
+rec {
+  spagoProject = import ./project.nix {
+    inherit self inputs pkgs utils;
+  };
 
   # Utilities for generating flake outputs, etc...
+  #
+  # This can be helpful outside of the context of `spagoProject` as well, so
+  # it's defined here separately (e.g. the functions can be applied to existing
+  # derivations not taken from `spagoProject`)
   utils = {
     apps =
       let
