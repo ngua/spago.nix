@@ -83,11 +83,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1661925928,
-        "narHash": "sha256-cLibvJxbGB+xpuhBfIUzg/y/1+bAhg59rr8Pb2Q2Juk=",
+        "lastModified": 1661928991,
+        "narHash": "sha256-aHIU8Q+EMw4qXwe8pAaTw0HVmq8XosScdDmQL9qq1EY=",
         "owner": "ngua",
         "repo": "spago.nix",
-        "rev": "40d66076e1c52e5f609671263e05df831ca0dfb7",
+        "rev": "e2bba557ac2d74e72259894749535d4198087be0",
         "type": "github"
       },
       "original": {

@@ -48,8 +48,11 @@
       );
 
       overlays = {
-        default = import ./overlay.nix {
-          inherit inputs self;
+        default = final: _: {
+          spago-nix = import ./lib/spago.nix {
+            inherit self inputs;
+            pkgs = final;
+          };
         };
       };
     };
