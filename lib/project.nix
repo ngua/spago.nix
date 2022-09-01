@@ -623,7 +623,7 @@ let
         + shellHook;
     };
 in
-{
+rec {
   # These can be generated for users
   flake = rec {
     devShells.default = mkDevShell shell;
@@ -634,6 +634,10 @@ in
       inherit output nodeModules;
     } // lib.attrsets.optionalAttrs withDocs {
       docs = buildDocs { };
+    };
+  } // lib.attrsets.optionalAttrs withDocs {
+    apps.docs = utils.apps.fromDocs {
+      inherit (flake.packages) docs;
     };
   };
 
