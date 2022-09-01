@@ -258,7 +258,7 @@ let
   # upstream package set during compilation
   lsDeps = import
     (
-      pkgs.runCommand "${name}-ls-deps"
+      pkgs.runCommandLocal "${name}-ls-deps"
         {
           buildInputs = [ eps.spago pkgs.jq fakePackagesDhall ];
         }
@@ -533,35 +533,70 @@ let
         "Command name cannot be empty";
       nodeApp' args;
 
+  docsDeps = { format ? "html" }:
+    assert lib.assertOneOf "format" format [ "html" "markdown" ];
+    pkgs.runCommand
+      "${name}-deps-docs"
+      {
+        buildInputs = [ compiler eps.spago pkgs.git nodejs ];
+      }
+      ''
+        ${prepareFakeSpagoEnv}
+
+        cp -r ${installed} .spago
+        cp ${fakePackagesDhall}/packages.dhall .
+        cp ${spagoDhall} ./spago.dhall
+        chmod -R +rwx .
+        find .spago -exec touch -m {} +
+
+        spago docs --format ${format} --deps-only
+
+        mkdir $out
+        mv generated-docs $out
+        mv output $out
+      '';
+
   buildDocs =
-    { depsOnly ? false # If `true`, only build docs for the project dependencies
-    , format ? "html"
+    { format ? "html" # HTML or Markdown
+      # If `true`, only build docs for the project dependencies
+    , depsOnly ? false
     , ...
     }@args:
       assert lib.assertOneOf "format" format [ "html" "markdown" ];
-      let
-      in
-      pkgs.runCommand
-        (
-          args.name or ''${name}${lib.optionalString depsOnly "-deps"}-docs''
-        )
-        {
-          buildInputs = [ compiler eps.spago pkgs.git nodejs ];
-        }
-        ''
-          ${prepareFakeSpagoEnv}
+      if depsOnly then
+        docsDeps { inherit format; }
+      else
+        pkgs.runCommand
+          (
+            args.name or "${name}-docs"
+          )
+          {
+            buildInputs = [
+              compiler
+              eps.spago
+              pkgs.git
+              nodejs
+              (docsDeps { inherit format; })
+            ];
+          }
+          ''
+            ${prepareFakeSpagoEnv}
 
-          cp -r ${installed} .spago
-          cp -r ${src}/* .
-          chmod -R +rwx .
-          cp ${fakePackagesDhall}/packages.dhall .
+            cp -r ${installed} .spago
+            cp -r ${src}/* .
+            chmod -R +rwx .
+            cp ${fakePackagesDhall}/packages.dhall .
 
-          spago docs --format ${format} ${lib.optionalString depsOnly "--deps-only"}
+            cp -r ${docsDeps { inherit format; }}/{generated-docs,output} .
+            find ./output -exec touch -m -d '01/01/1970' {} +
+            chmod -R +rwx .
 
-          mkdir $out
-          mv generated-docs $out
-          mv output $out
-        '';
+            spago docs --format ${format}
+
+            mkdir $out
+            mv generated-docs $out
+            mv output $out
+          '';
 
   # Make a `devShell` from the options provided via `spagoProject.shell`,
   # all of which have default options
