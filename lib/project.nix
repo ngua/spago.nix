@@ -619,7 +619,6 @@ let
         compiler
         nodejs
       ]
-      # TODO handle different versions of tools, make `tools` a set?
       ++ builtins.map (tool: eps.${tool}) tools;
       shellHook =
         let
@@ -647,10 +646,9 @@ let
             # is writable when starting the REPL, hence the `cp -r` and `chmod`
             # invocations
             ''
-              if [[ -d .spago ]]; then
-                rm -rf .spago
+              if [[ ! -d .spago ]]; then
+                 mkdir .spago
               fi
-              mkdir .spago
               cp -r ${installed'}/* .spago
               chmod -R +rwx .spago
             ''
