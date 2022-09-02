@@ -1,5 +1,6 @@
-# Created 2022-09-02 Fri 18:35
+# Created 2022-09-02 Fri 18:58
 #+title: ~spago.nix~
+#+export_file_name: ../README.org
 
 * ToC                                                                   :toc:
 - [[#introduction][Introduction]]
@@ -26,7 +27,7 @@ See the [[#motivation][Motivation]] below for more information on why ~spago.nix
       nixpkgs.follows = "spago-nix/nixpkgs";
       spago-nix.url = "github:ngua/spago.nix";
 
-      # For use with the `sha256map` to create a project
+      # Additional Purescript dependencies
       lattice = {
         url = "github:Risto-Stevcev/purescript-lattice/v0.3.0";
         flake = false;

@@ -4,7 +4,7 @@
     nixpkgs.follows = "spago-nix/nixpkgs";
     spago-nix.url = "github:ngua/spago.nix";
 
-    # For use with the `sha256map` to create a project
+    # Additional Purescript dependencies
     lattice = {
       url = "github:Risto-Stevcev/purescript-lattice/v0.3.0";
       flake = false;
