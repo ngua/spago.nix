@@ -20,16 +20,16 @@
 This is the primary interface to working with ~spago.nix~. It takes a ~src~ containing a Purescript project and generates several useful flake outputs along with several functions (see [[#library-functions][below]])
 *** Arguments
 - ~name~ :: (*Required*)
+  The project name. Used to set the names of derivations generated in ~spagoProject~
   - Type :: /string/
-  - Description :: The project name. Used to set the names of derivations generated in ~spagoProject~
 
 - ~src~ :: (*Required*)
+  A Nix store path pointing to the project sources
   - Type :: /path/
-  - Description :: A Nix store path pointing to the project sources
 
 - ~shell~ ::
+  Holds configuration options for the generated ~devShell~. The ~devShell~ will always contain a suitable version of ~purs~ and ~spago~
   - Type :: /attribute set/
-  - Description :: Holds configuration options for the generated ~devShell~. The ~devShell~ will always contain a suitable version of ~purs~ and ~spago~
   - Default ::
     #+begin_src nix
     {
@@ -60,9 +60,8 @@ This is the primary interface to working with ~spago.nix~. It takes a ~src~ cont
     #+end_src
 
 - ~extraSources~ ::
+  A mapping from dependency names to their sources. Can be easily converted from flake ~inputs~. *Note*: The sources provided must match the revisions in your ~packages.dhall~ /exactly/. Otherwise hard-to-debug errors will likely arise
   - Type :: /attribute set/
-  - Description :: A mapping from dependency names to their sources. Can be easily converted from flake ~inputs~
-    *Note*: The sources provided must match the revisions in your ~packages.dhall~ /exactly/. Otherwise hard-to-debug errors will likely arise
   - Default ::
     #+begin_src nix
     { }
@@ -75,9 +74,8 @@ This is the primary interface to working with ~spago.nix~. It takes a ~src~ cont
     #+end_src
 
 - ~sha256map~ ::
+  A mapping from dependency names to their sha256 hashes and exact revisions. Can also be converted from flake ~inputs~. *Note*: It is considerably more convenient and efficient to use ~extraSources~, as the corresponding dependencies will be fetched from the network when using ~sha256map~
   - Type :: /attribute set/
-  - Description :: A mapping from dependency names to their sha256 hashes and exact revisions. Can also be converted from flake ~inputs~
-    *Note*: It is considerably more convenient and efficient to use ~extraSources~, as the corresponding dependencies will be fetched from the network when using ~sha256map~
   - Default ::
     #+begin_src nix
     { }
@@ -93,8 +91,8 @@ This is the primary interface to working with ~spago.nix~. It takes a ~src~ cont
     #+end_src
 
 - ~flags~ ::
+  Contains various flags used for compiling the project sources and installing dependencies
   - Type :: /attribute set/
-  - Description :: Contains various flags used for compiling the project sources and installing dependencies
   - Default ::
     #+begin_src nix
     {
@@ -118,8 +116,8 @@ This is the primary interface to working with ~spago.nix~. It takes a ~src~ cont
     #+end_src
 
 - ~nodejs~ ::
+  The specific version of ~nodejs~ to use. Will be used throughout the project components and in the ~devShell~
   - Type :: /derivation/
-  - Description :: The specific version of ~nodejs~ to use. Will be used throughout the project components and in the ~devShell~
   - Default ::
     #+begin_src nix
     pkgs.nodejs-14_x
@@ -130,8 +128,8 @@ This is the primary interface to working with ~spago.nix~. It takes a ~src~ cont
     #+end_src
 
 - ~buildConfig~ ::
+  Holds paths to various build configuration files
   - Type :: /attribute set/
-  - Description :: Holds paths to various build configuration files
   - Default ::
     #+begin_src nix
     {
@@ -149,8 +147,8 @@ This is the primary interface to working with ~spago.nix~. It takes a ~src~ cont
     #+end_src
 
 - ~withDocs~ ::
+  If ~true~, ~spagoProject~ will build docs using default values for options and add them to the ~flake~ attribute that is returned. Even if this is ~false~, you can still use the ~buildDocs~ builder to generate documentation
   - Type :: /boolean/
-  - Description :: If ~true~, ~spagoProject~ will build docs using default values for options and add them to the ~flake~ attribute that is returned. Even if this is ~false~, you can still use the ~buildDocs~ builder to generate documentation
   - Default ::
     #+begin_src nix
     true
@@ -165,10 +163,10 @@ This is the primary interface to working with ~spago.nix~. It takes a ~src~ cont
 Bundles the project into a CommonJS module using the provided ~main~ module to the output filepath indicated by ~to~
 *** Returns
 /derivation/
-*** Args
+*** Arguments
 - ~main~ ::
+  The main Purescript module to bundle (the module name, not a filepath), used as the bundled module's entrypoint
   - Type :: /string/
-  - Description :: The main Purescript module to bundle (the module name, not a filepath), used as the bundled module's entrypoint
   - Default ::
     #+begin_src nix
     "Main"
@@ -179,8 +177,8 @@ Bundles the project into a CommonJS module using the provided ~main~ module to t
     #+end_src
 
 - ~to~ ::
+  The target filepath that the bundled module will be written to
   - Type :: /string/
-  - Description :: The target filepath that the bundled module will be written to
   - Default ::
     #+begin_src nix
     "index.js"
@@ -191,8 +189,8 @@ Bundles the project into a CommonJS module using the provided ~main~ module to t
     #+end_src
 
 - ~name~ ::
+  Overrides the ~name~ used for the derivation, which is otherwise derived from the ~name~ arg to ~spagoProject~
   - Type :: /string/
-  - Description :: Overrides the ~name~ used for the derivation, which is otherwise derived from the ~name~ arg to ~spagoProject~
   - Example ::
     #+begin_src nix
     "my-bundled-module"
@@ -202,10 +200,10 @@ Bundles the project into a CommonJS module using the provided ~main~ module to t
 Bundles the project into an executable that can be run with Node, using the provided ~main~ module to the output filepath indicated by ~to~. *Note*: Although this is bundled into an app, it cannot be run on its own and is mostly useful if you want to use it in another derivation. You will still need to call ~node~ to execute it and set the ~NODE_PATH~ if necessary. You can also use [[#nodeapp][ ~nodeApp~ ]] or [[#nodeappwithargs][ ~nodeAppWithArgs~ ]] which both do these steps for you.
 *** Returns
 /derivation/
-*** Args
+*** Arguments
 - ~main~ ::
+  The main Purescript module to bundle (the module name, not a filepath), used as the bundled app's entrypoint
   - Type :: /string/
-  - Description :: The main Purescript module to bundle (the module name, not a filepath), used as the bundled app's entrypoint
   - Default ::
     #+begin_src nix
     "Main"
@@ -216,8 +214,8 @@ Bundles the project into an executable that can be run with Node, using the prov
     #+end_src
 
 - ~to~ ::
+  The target filepath that the bundled app will be written to
   - Type :: /string/
-  - Description :: The target filepath that the bundled app will be written to
   - Default ::
     #+begin_src nix
     "index.js"
@@ -228,8 +226,8 @@ Bundles the project into an executable that can be run with Node, using the prov
     #+end_src
 
 - ~name~ ::
+  Overrides the ~name~ used for the derivation, which is otherwise derived from the ~name~ arg to ~spagoProject~
   - Type :: /string/
-  - Description :: Overrides the ~name~ used for the derivation, which is otherwise derived from the ~name~ arg to ~spagoProject~
   - Example ::
     #+begin_src nix
     "my-bundled-app"
@@ -239,10 +237,10 @@ Bundles the project into an executable that can be run with Node, using the prov
 Calls the Purescript entrypoint specified by ~testMain~ without writing to ~$out~. Suitable for use as part of your flake ~checks~ (if the returns a non-zero exit code, the check will fail)
 *** Returns
 /derivation/
-*** Args
+*** Arguments
 - ~testMain~ ::
+  The main Purescript module that acts as an entrypoint
   - Type :: /string/
-  - Description :: The main Purescript module that acts as an entrypoint
   - Default ::
     #+begin_src nix
     "Test.Main"
@@ -253,8 +251,8 @@ Calls the Purescript entrypoint specified by ~testMain~ without writing to ~$out
     #+end_src
 
 - ~env~ ::
+  Environment or other variables; these are passed directly to ~runCommand~. Can be useful if your test depends on looking up something in the environment
   - Type :: /attribute set/
-  - Description :: Environment or other variables; these are passed directly to ~runCommand~. Can be useful if your test depends on looking up something in the environment
   - Default ::
     #+begin_src nix
     { }
@@ -267,8 +265,8 @@ Calls the Purescript entrypoint specified by ~testMain~ without writing to ~$out
     #+end_src
 
 - ~nodeModules~ ::
+  Overrides the ~nodeModules~ used internally, which default to the project-wide ones
   - Type :: /derivation/
-  - Description :: Overrides the ~nodeModules~ used internally, which default to the project-wide ones
   - Example ::
     #+begin_src nix
     spago-nix.utils.js.mkNodeModules {
@@ -278,8 +276,8 @@ Calls the Purescript entrypoint specified by ~testMain~ without writing to ~$out
     #+end_src
 
 - ~name~ ::
+  Overrides the ~name~ used for the derivation, which is otherwise derived from the ~name~ arg to ~spagoProject~
   - Type :: /string/
-  - Description :: Overrides the ~name~ used for the derivation, which is otherwise derived from the ~name~ arg to ~spagoProject~
   - Example ::
     #+begin_src nix
     "my-test"
@@ -289,10 +287,10 @@ Calls the Purescript entrypoint specified by ~testMain~ without writing to ~$out
 Calls the Purescript entrypoint (specified by ~testMain~) with Node and without writing to ~$out~. Provides the specified ~command~ and ~arugments~ to the Node invocation; this is useful if your test requires or parses specific arguments. Also suitable for use as part of your flake ~checks~ (if the returns a non-zero exit code, the check will fail to build)
 *** Returns
 /derivation/
-*** Args
+*** Arguments
 - ~testMain~ ::
+  The main Purescript module that acts as an entrypoint
   - Type :: /string/
-  - Description :: The main Purescript module that acts as an entrypoint
   - Default ::
     #+begin_src nix
     "Test.Main"
@@ -303,8 +301,8 @@ Calls the Purescript entrypoint (specified by ~testMain~) with Node and without 
     #+end_src
 
 - ~command~ ::
+  The command-line name. Node's ~process.env.argv~ includes this as the first argument, so if we didn't include it then the first argument would become the command name (an undesirable result)
   - Type :: /string/
-  - Description :: The command-line name. Node's ~process.env.argv~ includes this as the first argument, so if we didn't include it then the first argument would become the command name (an undesirable result)
   - Default ::
     #+begin_src nix
     builtins.replaceStrings [ "." ] [ "-" ]
@@ -316,8 +314,8 @@ Calls the Purescript entrypoint (specified by ~testMain~) with Node and without 
     #+end_src
 
 - ~arguments~ ::
+  The arguments to provide to the command. These are joined into a single space-separated string and passed to the Node invocation
   - Type :: /list/
-  - Description :: The arguments to provide to the command. These are joined into a single space-separated string and passed to the Node invocation
   - Default ::
     #+begin_src nix
     [ ]
@@ -328,8 +326,8 @@ Calls the Purescript entrypoint (specified by ~testMain~) with Node and without 
     #+end_src
 
 - ~env~ ::
+  Environment or other variables; these are passed directly to ~runCommand~. Can be useful if your test depends on looking up something in the environment
   - Type :: /attribute set/
-  - Description :: Environment or other variables; these are passed directly to ~runCommand~. Can be useful if your test depends on looking up something in the environment
   - Default ::
     #+begin_src nix
     { }
@@ -342,8 +340,8 @@ Calls the Purescript entrypoint (specified by ~testMain~) with Node and without 
     #+end_src
 
 - ~nodeModules~ ::
+  Overrides the ~nodeModules~ used internally, which default to the project-wide ones
   - Type :: /derivation/
-  - Description :: Overrides the ~nodeModules~ used internally, which default to the project-wide ones
   - Example ::
     #+begin_src nix
     spago-nix.utils.js.mkNodeModules {
@@ -353,8 +351,8 @@ Calls the Purescript entrypoint (specified by ~testMain~) with Node and without 
     #+end_src
 
 - ~name~ ::
+  Overrides the ~name~ used for the derivation, which is otherwise derived from the ~name~ arg to ~spagoProject~
   - Type :: /string/
-  - Description :: Overrides the ~name~ used for the derivation, which is otherwise derived from the ~name~ arg to ~spagoProject~
   - Example ::
     #+begin_src nix
     "my-test"
@@ -364,10 +362,10 @@ Calls the Purescript entrypoint (specified by ~testMain~) with Node and without 
 Creates an executable from the Purescript entrypoint (specified by ~main~) that calls Node, installing it to ~$out/bin/name~. This is similar to [[#bundleapp][ ~bundleApp~ ]] above, but calls ~node~ for you and also sets the correct ~NODE_PATH~ using the ~nodeModules~ that have been generated for the project (unless overridden)
 *** Returns
 /derivation/
-*** Args
+*** Arguments
 - ~main~ ::
+  The main Purescript module that acts as an entrypoint
   - Type :: /string/
-  - Description :: The main Purescript module that acts as an entrypoint
   - Default ::
     #+begin_src nix
     "Main"
@@ -378,8 +376,8 @@ Creates an executable from the Purescript entrypoint (specified by ~main~) that 
     #+end_src
 
 - ~env~ ::
+  Environment or other variables. These are ~export~ ed in a script that is provided to ~writeShellApplication~, so you may want to use ~escapeShellArg~ as this is not done for you automatically. Can be useful if your test depends on looking up something in the environment
   - Type :: /attribute set/
-  - Description :: Environment or other variables. These are ~export~ ed in a script that is provided to ~writeShellApplication~, so you may want to use ~escapeShellArg~ as this is not done for you automatically. Can be useful if your test depends on looking up something in the environment
   - Default ::
     #+begin_src nix
     { }
@@ -392,8 +390,8 @@ Creates an executable from the Purescript entrypoint (specified by ~main~) that 
     #+end_src
 
 - ~nodeModules~ ::
+  Overrides the ~nodeModules~ used internally, which default to the project-wide ones
   - Type :: /derivation/
-  - Description :: Overrides the ~nodeModules~ used internally, which default to the project-wide ones
   - Example ::
     #+begin_src nix
     spago-nix.utils.js.mkNodeModules {
@@ -403,8 +401,8 @@ Creates an executable from the Purescript entrypoint (specified by ~main~) that 
     #+end_src
 
 - ~name~ ::
+  Overrides the ~name~ used for the derivation, which is otherwise derived from the ~name~ arg to ~spagoProject~
   - Type :: /string/
-  - Description :: Overrides the ~name~ used for the derivation, which is otherwise derived from the ~name~ arg to ~spagoProject~
   - Example ::
     #+begin_src nix
     "my-node-app"
@@ -414,10 +412,10 @@ Creates an executable from the Purescript entrypoint (specified by ~main~) that 
   Similar to [[#nodeapp][ ~nodeApp~ ]] above, but also allows for passing a command name and list of arguments. *Note*: This is useful if you want to call an application with the same set of arguments each time -- specifically, those passed with the provided list of ~arguments~ will always be used
 *** Returns
 /derivation/
-*** Args
+*** Arguments
 - ~main~ ::
+  The main Purescript module that acts as an entrypoint
   - Type :: /string/
-  - Description :: The main Purescript module that acts as an entrypoint
   - Default ::
     #+begin_src nix
     "Main"
@@ -428,8 +426,8 @@ Creates an executable from the Purescript entrypoint (specified by ~main~) that 
     #+end_src
 
 - ~env~ ::
+  Environment or other variables. These are ~export~ ed in a script that is provided to ~writeShellApplication~, so you may want to use ~escapeShellArg~ as this is not done for you automatically. Can be useful if your test depends on looking up something in the environment
   - Type :: /attribute set/
-  - Description :: Environment or other variables. These are ~export~ ed in a script that is provided to ~writeShellApplication~, so you may want to use ~escapeShellArg~ as this is not done for you automatically. Can be useful if your test depends on looking up something in the environment
   - Default ::
     #+begin_src nix
     { }
@@ -442,8 +440,8 @@ Creates an executable from the Purescript entrypoint (specified by ~main~) that 
     #+end_src
 
 - ~nodeModules~ ::
+  Overrides the ~nodeModules~ used internally, which default to the project-wide ones
   - Type :: /derivation/
-  - Description :: Overrides the ~nodeModules~ used internally, which default to the project-wide ones
   - Example ::
     #+begin_src nix
     spago-nix.utils.js.mkNodeModules {
@@ -453,8 +451,8 @@ Creates an executable from the Purescript entrypoint (specified by ~main~) that 
     #+end_src
 
 - ~name~ ::
+  Overrides the ~name~ used for the derivation, which is otherwise derived from the ~name~ arg to ~spagoProject~
   - Type :: /string/
-  - Description :: Overrides the ~name~ used for the derivation, which is otherwise derived from the ~name~ arg to ~spagoProject~
   - Example ::
     #+begin_src nix
     "my-node-app"
@@ -465,10 +463,10 @@ Creates an executable from the Purescript entrypoint (specified by ~main~) that 
   *Note*: If you set the ~withDocs~ argument to ~true~ (the default value) in [[#spago-nixspagoproject][ ~spagoProject~ ]], a ~docs~ attribute will be built and added to ~flake.packages~.
 *** Returns
 /derivation/
-*** Args
+*** Arguments
 - ~format~ ::
+  The format for the resulting compiled documentation
   - Type :: one of "~html~" or "~markdown~"
-  - Description :: The format for the resulting compiled documentation
   - Default ::
     #+begin_src nix
     "html"
@@ -479,8 +477,8 @@ Creates an executable from the Purescript entrypoint (specified by ~main~) that 
     #+end_src
 
 - ~depsOnly~ ::
+  If ~true~, documentation will only be compiled for the project's dependencies
   - Type :: /boolean/
-  - Description :: If ~true~, documentation will only be compiled for the project's dependencies
   - Default ::
     #+begin_src nix
     false
