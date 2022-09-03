@@ -4,27 +4,29 @@
 
 ~spago.nix~ offers a number of functions providing Nix integration for Spago projects. These are contained in a top-level ~spago-nix~ namespace that can be accessed by applying its overlay (~overlays.default~ provided by the ~spago.nix~ flake). This document provides an overview of the different library functions and data structures that are made available.
 
-* Table of Contents :toc@4:
+* Table of Contents
+# Disabled for now, as the link names are formatted poorly
+# :toc@4:
 - [[#top-level-attributes][Top-level attributes]]
-  - [[#spago-nixspagoproject][~spago-nix.spagoProject~]]
-  - [[#spago-nixutilsapps][~spago-nix.utils.apps~]]
-    - [[#fromnodeapp][~fromNodeApp~]]
-    - [[#fromdocs][~fromDocs~]]
-  - [[#spago-nixutilsjs][~spago-nix.utils.js~]]
-    - [[#nodemodulefor][~nodeModuleFor~]]
+  - [[#spago-nixspagoproject][ ~spago-nix.spagoProject~ ]]
+  - [[#spago-nixutilsapps][ ~spago-nix.utils.apps~ ]]
+    - [[#fromnodeapp][ ~fromNodeApp~ ]]
+    - [[#fromdocs][ ~fromDocs~ ]]
+  - [[#spago-nixutilsjs][ ~spago-nix.utils.js~ ]]
+    - [[#nodemodulefor][ ~nodeModuleFor~ ]]
 - [[#library-functions][Library functions]]
-  - [[#bundlemodule][~bundleModule~]]
-  - [[#bundleapp][~bundleApp~]]
-  - [[#runtest][~runTest~]]
-  - [[#runtestwithargs][~runTestWithArgs~]]
-  - [[#nodeapp][~nodeApp~]]
-  - [[#nodeappwithargs][~nodeAppWithArgs~]]
-  - [[#builddocs][~buildDocs~]]
+  - [[#bundlemodule][ ~bundleModule~ ]]
+  - [[#bundleapp][ ~bundleApp~ ]]
+  - [[#runtest][ ~runTest~ ]]
+  - [[#runtestwithargs][ ~runTestWithArgs~ ]]
+  - [[#nodeapp][ ~nodeApp~ ]]
+  - [[#nodeappwithargs][ ~nodeAppWithArgs~ ]]
+  - [[#builddocs][ ~buildDocs~ ]]
 - [[#other][Other]]
-  - [[#flake][~flake~]]
-    - [[#devshells][~devShells~]]
-    - [[#packages][~packages~]]
-    - [[#apps][~apps~]]
+  - [[#flake][ ~flake~ ]]
+    - [[#devshells][ ~devShells~ ]]
+    - [[#packages][ ~packages~ ]]
+    - [[#apps][ ~apps~ ]]
 
 * Top-level attributes
 ** ~spago-nix.spagoProject~
