@@ -14,6 +14,7 @@
   - [[#nodeappwithargs][~nodeAppWithArgs~]]
   - [[#builddocs][~buildDocs~]]
 - [[#other][Other]]
+  - [[#flake][~flake~]]
 
 * Top-level attributes
 ** ~spago-nix.spagoProject~
@@ -159,6 +160,7 @@ This is the primary interface to working with ~spago.nix~. It takes a ~src~ cont
     #+end_src
 
 * Library functions
+These functions are made available in the attribute set returned by [[#spago-nixspagoproject][ ~spagoProject~ ]]. Because Spago has no mechanism for describing different project components (libraries, executables, tests, etc...), ~spago.nix~ cannot generate outputs for you automatically (some outputs can be generated and put into the [[#flake][ ~flake~ ]] attribute). To work around this, the following functions provide a more complete interface for different commands that ~spago~ offers
 ** ~bundleModule~
 Bundles the project into a CommonJS module using the provided ~main~ module to the output filepath indicated by ~to~
 *** Returns
@@ -197,7 +199,7 @@ Bundles the project into a CommonJS module using the provided ~main~ module to t
     #+end_src
 
 ** ~bundleApp~
-Bundles the project into an executable that can be run with Node, using the provided ~main~ module to the output filepath indicated by ~to~. *Note*: Although this is bundled into an app, it cannot be run on its own and is mostly useful if you want to use it in another derivation. You will still need to call ~node~ to execute it and set the ~NODE_PATH~ if necessary. You can also use [[#nodeapp][ ~nodeApp~ ]] or [[#nodeappwithargs][ ~nodeAppWithArgs~ ]] which both do these steps for you.
+Bundles the project into an executable that can be run with Node, using the provided ~main~ module to the output filepath indicated by ~to~. *Note*: Although this is bundled into an app, it cannot be run on its own and is mostly useful if you want to use it in another derivation. You will still need to call ~node~ to execute it and set the ~NODE_PATH~ if necessary. You can also use [[#nodeapp][ ~nodeApp~ ]] or [[#nodeappwithargs][ ~nodeAppWithArgs~ ]] , both of which perform these steps for you.
 *** Returns
 /derivation/
 *** Arguments
@@ -489,3 +491,18 @@ Creates an executable from the Purescript entrypoint (specified by ~main~) that 
     #+end_src
 
 * Other
+** ~flake~
+This is a set returned from the [[#spago-nixspagoproject][ ~spagoProject~ ]] function and contains the following attributes. Its structure mirrors the ~outputs~ of a ~flake.nix~:
+- ~devShells~ ::
+  - ~default~ ::
+    Contains a development environment corresponding to the options provided to ~spagoProject~'s ~shell~ argument. Irrespective of the selected options, it will always contain a version of ~purs~ that corresponds to your upstream package set as well as ~spago~
+- ~devShell~ ::
+  An alias for ~devShells.default~
+- ~packages~ ::
+  - ~output~ ::
+    This holds the ~output~ directory that is created by ~purs~ when compiling the project's sources. It can be used in subsequent derivations. It copies the ~src~ as well: if you read from a file from a relative path in your Purescript code, ~purs~ doesn't copy it into the ~output~ directory. This behavior may change in the future.
+  - ~docs~ ::
+    This is only added to the ~flake~ if ~withDocs~ is enabled (the default). It contains the ~generated-docs~ and ~output~ directory produced by ~spago docs~. It uses the default format (~html~) and includes the project's sources as well. If you set ~withDocs~ to ~false~, you can still build documentation with more customization options using [[#builddocs][ ~buildDocs~ ]] (but it will not be automatically added to the ~flake~ of course)
+- ~apps~ ::
+  - ~docs~ ::
+    As with ~packages.docs~, this is only added to the ~flake~ if ~withDocs~ is enabled. It builds uses that derivation to serve documentation on ~localhost:8080~. If you do not enable ~withDocs~, then you can use ~spago-nix.utils.apps.fromDocs~ to create a local documentation server with more options
