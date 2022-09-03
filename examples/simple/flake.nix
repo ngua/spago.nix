@@ -53,8 +53,9 @@
           pkgs = nixpkgsFor system;
         in
         (flakeFor system).apps // {
-          node-app = pkgs.spago-nix.utils.apps.fromNodeApp
-            self.packages.${system}.node-app;
+          node-app = pkgs.spago-nix.utils.apps.fromNodeApp {
+            app = self.packages.${system}.node-app;
+          };
         }
       );
     };
