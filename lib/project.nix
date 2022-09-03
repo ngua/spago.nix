@@ -51,15 +51,12 @@
   #   - `package-lock.json`
   # These can be derived from the `src`, but can also be explicitly passed
 , buildConfig ? { }
-  # Turns on the `--strict` during compilation, e.g. `psa --strict ...`
-, strict ? true
-  # List of warning types to silence
-, censorCodes ? [ ]
-  # If `true`, `npm install` will only write to `package-lock.json`
-, packageLockOnly ? true
-  # If `true`, the project's generate `node_modules` will also contain all
-  # `devDependencies`
-, development ? true
+  # Various flags for compilation and installation:
+  #   - `strict`; turns on `--strict` during compilation, e.g. `psa --strict ...`
+  #   - `censorCodes`; list of warnings to silence during compilation
+  #   - `development`; if set, the generated `node_modules` will also contain all
+  #     `devDependencies`
+, flags ? { }
   # If `true`, will build docs using default values for options. Even if this
   # is `false`, you can still use the `buildDocs` builder that is returned from
   # here
@@ -108,7 +105,7 @@ let
               mkdir $out && cd $out
               cp ${packageLock} ./package-lock.json
               cp ${packageJson} ./package.json
-              node2nix ${lib.optionalString development "--development" } \
+              node2nix ${lib.optionalString (flags.development or true) "--development" } \
                 --lock ./package-lock.json -i ./package.json
             ''
         )
@@ -283,10 +280,10 @@ let
     let
       psaArgs = builtins.concatStringsSep " "
         [
-          (lib.optionalString strict "--strict")
+          (lib.optionalString (flags.strict or true) "--strict")
           (
             lib.optionalString
-              (censorCodes != [ ])
+              ((flags.censorCodes or [ ]) != [ ])
               ''--censor-codes=${builtins.concatStringsSep "," censorCodes}''
           )
           "--censor-lib --is-lib=.spago"
@@ -610,6 +607,8 @@ let
       # If `true`, the Spago packages will be installed in `./.spago` in
       # the `devShell`'s `shellHook`
     , install ? true
+      # If `true`, `npm install` will only write to `package-lock.json`
+    , packageLockOnly ? true
     , shellHook ? ""
     }@args:
     pkgs.mkShell {
