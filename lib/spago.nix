@@ -19,16 +19,33 @@ rec {
         };
       in
       {
-        # Turn a NodeJS app (e.g. using `nodeApp` from `spagoProject`) into a
-        # flake app
-        fromNodeApp = app: appHelper "${app}/bin/${app.name}";
 
         # Turn a NodeJS app (e.g. using `nodeApp` from `spagoProject`) into a
-        # flake app and run it with the arguments provided to `nix run`
+        # flake app. If you pass arguments to the `nix run` invocation, then these
+        # will be passed to the application.
         #
-        # NOTE: You must include the command name as the first argument, e.g.
-        # `nix run -- cmd --arg1 --arg2 ...`
-        fromNodeAppWithArgs = app: appHelper ''${app}/bin/${app.name} "$@"'';
+        # NOTE: If you do pass command-line arguments, you should provide the
+        # command name as the first argument (or see below for another way)
+        #
+        # NOTE: Using `nodeAppWithArgs` will always use the `arguments`
+        # provided to that derivation (and not any command-line arguments), so
+        # it is not appropriate for use with this helper. You can, however,
+        # fix the command's name (the first element of Node's `process.env.argv`),
+        # and pass an empty list of `arguments` (the default value), e.g.:
+        #
+        # ```
+        # node-app = pkgs.spago-nix.utils.fromNodeApp (
+        #   project.nodeAppWithArgs {
+        #     main = "The.Main.Module";
+        #     # or you can leave it empty, a default will be created
+        #     command = "the-command";
+        #     # this is the default
+        #     arguments = [ ];
+        #   }
+        # )
+        # ```
+        #
+        fromNodeApp = app: appHelper ''${app}/bin/${app.name} "$@"'';
 
         fromDocs = { docs, port ? 8080 }:
           let
