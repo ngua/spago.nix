@@ -39,7 +39,8 @@ Worse, ~spago2nix~ cannot be run in a pure environment. Spago's package format d
 Most of the time, a user's ~spago-packages.nix~ will primarily contain the same Purescript packages from upstream package sets. In this case, we can generate the Nix package sets containing hashes for each dependency and then store them in a central repository, emulating package sets like ~nodePackages~ in the ~nixpkgs~ repo. Doing this allows us to create a suitable package set for users in a pure environment and removes the need for committing any generated Nix code.
 
 * Documentation
-TODO
+# The paths need to be set to `./doc/...` since this will be exported to `../README.org`
+- [[file:./docs/reference.org][Reference]]
 
 * Caveats
 TODO

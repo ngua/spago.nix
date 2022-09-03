@@ -1,0 +1,149 @@
+#+title: Reference
+
+~spago.nix~ offers a number of functions providing Nix integration for Spago projects. These are contained in a top-level ~spago-nix~ namespace that can be accessed by applying its overlay (~overlays.default~ provided by the ~spago.nix~ flake). This document provides an overview of the different library functions and data structures that are made available.
+
+* Top-level attributes
+** ~spago-nix.spagoProject~
+*** Arguments
+- ~name~ :: (*Required*)
+  - Type :: /string/
+  - Description :: The project name. Used to set the names of derivations generated in ~spagoProject~
+
+- ~src~ :: (*Required*)
+  - Type :: /path/
+  - Description :: A Nix store path pointing to the project sources
+
+- ~shell~ ::
+  - Type :: /attribute set/
+  - Description :: Holds configuration options for the generated ~devShell~. The ~devShell~ will always contain a suitable version of ~purs~ and ~spago~
+  - Default ::
+    #+begin_src nix
+    {
+      # Purescript development tools, one of
+      # `purs-tidy`, `purty`, `purescript-language-server`, `pscid`
+      tools = [ ];
+      # Corresponds to `packages` argument of `pkgs.mkShell`
+      packages = [ ];
+      # If `true`, the Spago packages will be installed in `./.spago` in
+      # the `devShell`'s `shellHook`
+      install = true;
+      # If `true`, `npm install` will only write to `package-lock.json`
+      # (and never to `node_modules`)
+      packageLockOnly = true;
+      # Gets appended to the `shellHook` created for you in the `devShell`
+      shellHook = "";
+    }
+    #+end_src
+  - Example ::
+    #+begin_src nix
+    {
+      packages = [ "psa" "purs-tidy" "purescript-language-server" ];
+      packageLockOnly = false;
+      shellHook = ''
+        echo 'my shell hook'
+      '';
+    }
+    #+end_src
+
+- ~extraSources~ ::
+  - Type :: /attribute set/
+  - Description :: A mapping from dependency names to their sources. Can be easily converted from flake ~inputs~
+    *Note*: The sources provided must match the revisions in your ~packages.dhall~ /exactly/. Otherwise hard-to-debug errors will likely arise
+  - Default ::
+    #+begin_src nix
+    { }
+    #+end_src
+  - Example ::
+    #+begin_src nix
+    {
+      inherit (inputs) foo bar;
+    }
+    #+end_src
+
+- ~sha256map~ ::
+  - Type :: /attribute set/
+  - Description :: A mapping from dependency names to their sha256 hashes and exact revisions. Can also be converted from flake ~inputs~
+    *Note*: It is considerably more convenient and efficient to use ~extraSources~, as the corresponding dependencies will be fetched from the network when using ~sha256map~
+  - Default ::
+    #+begin_src nix
+    { }
+    #+end_src
+  - Example ::
+    #+begin_src nix
+    {
+      foo = {
+        inherit (inputs.foo) rev;
+        sha256 = inputs.foo.narHash;
+      };
+    }
+    #+end_src
+
+- ~flags~ ::
+  - Type :: /attribute set/
+  - Description :: Contains various flags used for compiling the project sources and installing dependencies
+  - Default ::
+    #+begin_src nix
+    {
+      # Turns on `--strict` during compilation; corresponds to
+      # `psa --strict ...`
+      strict = true;
+      # List of warnings to silence during compilation. For example
+      # `[ "UserDefinedWarning" ]`
+      censorCodes = [ ];
+      # If set, the generated `node_modules` will also contain all
+      # of the `devDependencies` declared in the `package.json`
+      development = true;
+    }
+    #+end_src
+  - Example ::
+    #+begin_src nix
+    {
+      censorCodes = [ "UserDefinedWarning" ];
+      development = false;
+    }
+    #+end_src
+
+- ~nodejs~ ::
+  - Type :: /derivation/
+  - Description :: The specific version of ~nodejs~ to use. Will be used throughout the project components and in the ~devShell~
+  - Default ::
+    #+begin_src nix
+    pkgs.nodejs-14_x
+    #+end_src
+  - Example ::
+    #+begin_src nix
+    pkgs.nodejs-18_x
+    #+end_src
+
+- ~buildConfig~ ::
+  - Type :: /attribute set/
+  - Description :: Holds paths to various build configuration files
+  - Default ::
+    #+begin_src nix
+    {
+      packagesDhall = src + "/packages.dhall";
+      spagoDhall = src + "/spago.dhall";
+      packageJson = src + "/package.json";
+      packageLock = src + "/package-lock.json";
+    }
+    #+end_src
+  - Example ::
+    #+begin_src nix
+    {
+      spagoDhall = src + "/some/weird/path/spago.dhall";
+    }
+    #+end_src
+
+- ~withDocs~ ::
+  - Type :: /boolean/
+  - Description :: If ~true~, ~spagoProject~ will build docs using default values for options and add them to the ~flake~ attribute that is returned. Even if this is ~false~, you can still use the ~buildDocs~ builder to generate documentation
+  - Default ::
+    #+begin_src nix
+    true
+    #+end_src
+  - Example ::
+    #+begin_src nix
+    false
+    #+end_src
+
+* Library functions
