@@ -19,7 +19,6 @@ rec {
         };
       in
       {
-
         # Turn a NodeJS app (e.g. using `nodeApp` from `spagoProject`) into a
         # flake app. If you pass arguments to the `nix run` invocation, then these
         # will be passed to the application.
@@ -63,5 +62,52 @@ rec {
           in
           appHelper "${server}/bin/${server.name}";
       };
+    # Javascript-specific utilities
+    js = {
+      # Generates `node_modules`. `spagoProject` does this internally, but some
+      # users may wish to override the `nodeModules` that get used in different
+      # derivations (for example, to include/exclude development dependencies)
+      nodeModulesFor =
+        { name ? "" # Appended to name of `runCommand` invocation
+          # Path to `package.json`
+        , packageJson
+          # Path to `package-lock.json`
+        , packageLock
+          # If `devDependencies` should be included
+        , development ? true
+        , nodejs ? pkgs.nodejs-14_x
+        }:
+        let
+          nodeEnv = import
+            (
+              pkgs.runCommand "node-modules-${name}"
+                {
+                  buildInputs = [ pkgs.nodePackages.node2nix ];
+                }
+                ''
+                  mkdir $out && cd $out
+                  cp ${packageLock} ./package-lock.json
+                  cp ${packageJson} ./package.json
+                  node2nix ${pkgs.lib.optionalString development "--development" } \
+                    --lock ./package-lock.json -i ./package.json
+                ''
+            )
+            {
+              inherit pkgs nodejs;
+              inherit (pkgs) system;
+            };
+          modules = pkgs.callPackage
+            (
+              _:
+              nodeEnv // {
+                shell = nodeEnv.shell.override {
+                  # see https://github.com/svanderburg/node2nix/issues/198
+                  buildInputs = [ pkgs.nodePackages.node-gyp-build ];
+                };
+              }
+            );
+        in
+        (modules { }).shell.nodeDependencies;
+    };
   };
 }

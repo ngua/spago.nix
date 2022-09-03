@@ -68,8 +68,7 @@ let
 
   packagesDhall = buildConfig.packagesDhall or /. + src + "/packages.dhall";
   spagoDhall = buildConfig.spagoDhall or /. + src + "/spago.dhall";
-  packageJson = buildConfig.packageJson or /. + src + "/package.json";
-  packageLock = buildConfig.packageLock or /. + src + "/package-lock.json";
+
 
   eps = import inputs.easy-purescript-nix { inherit pkgs; };
 
@@ -93,37 +92,12 @@ let
         ''
     );
 
-  nodeModules =
-    let
-      nodeEnv = import
-        (
-          pkgs.runCommand "node-modules-${name}"
-            {
-              buildInputs = [ pkgs.nodePackages.node2nix ];
-            }
-            ''
-              mkdir $out && cd $out
-              cp ${packageLock} ./package-lock.json
-              cp ${packageJson} ./package.json
-              node2nix ${lib.optionalString (flags.development or true) "--development" } \
-                --lock ./package-lock.json -i ./package.json
-            ''
-        )
-        {
-          inherit pkgs nodejs; inherit (pkgs) system;
-        };
-      modules = pkgs.callPackage
-        (
-          _:
-          nodeEnv // {
-            shell = nodeEnv.shell.override {
-              # see https://github.com/svanderburg/node2nix/issues/198
-              buildInputs = [ pkgs.nodePackages.node-gyp-build ];
-            };
-          }
-        );
-    in
-    (modules { }).shell.nodeDependencies;
+  nodeModules = utils.js.nodeModulesFor {
+    inherit name nodejs;
+    development = flags.development or true;
+    packageLock = buildConfig.packageLock or /. + src + "/package-lock.json";
+    packageJson = buildConfig.packageJson or /. + src + "/package.json";
+  };
 
   # Get the correct version of the `purs` compiler
   compiler =
