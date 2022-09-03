@@ -1,10 +1,14 @@
 #+title: Reference
+#+startup: fold
+#+OPTIONS: toc:3
 
 ~spago.nix~ offers a number of functions providing Nix integration for Spago projects. These are contained in a top-level ~spago-nix~ namespace that can be accessed by applying its overlay (~overlays.default~ provided by the ~spago.nix~ flake). This document provides an overview of the different library functions and data structures that are made available.
 
-* Table of Contents :toc:
+* Table of Contents :toc@3:
 - [[#top-level-attributes][Top-level attributes]]
   - [[#spago-nixspagoproject][~spago-nix.spagoProject~]]
+  - [[#spago-nixutils][~spago-nix.utils.*~]]
+    - [[#apps][~apps~]]
 - [[#library-functions][Library functions]]
   - [[#bundlemodule][~bundleModule~]]
   - [[#bundleapp][~bundleApp~]]
@@ -19,7 +23,7 @@
 * Top-level attributes
 ** ~spago-nix.spagoProject~
 This is the primary interface to working with ~spago.nix~. It takes a ~src~ containing a Purescript project and generates several useful flake outputs along with several functions (see [[#library-functions][below]])
-*** Arguments
+*** Arguments :noexport: :noexport:
 - ~name~ :: (*Required*)
   The project name. Used to set the names of derivations generated in ~spagoProject~
   - Type :: /string/
@@ -159,13 +163,61 @@ This is the primary interface to working with ~spago.nix~. It takes a ~src~ cont
     false
     #+end_src
 
+** ~spago-nix.utils.*~
+This contains several utilities for working with derivations related to Purescript. As most of these can be applied outside of the context of ~spagoProject~, they are not returned from that function unlike the [[#library-functions][other functions]] documented below
+*** ~apps~
+**** ~fromNodeApp~
+Turn a NodeJS app (e.g. using [[#nodeapp][ ~nodeApp~ ]]) into a flake app. If you pass arguments to the ~nix run~ invocation, these will be passed to the provided application.
+
+*Note*: If you do pass command-line arguments, you should provide the command name as the first argument on the command line (Node's ~proces.env.argv~ always contains the command's name as its first element). Alternately, the provided ~app~ can be created using [[#nodeappwithargs][ ~nodeAppWithArgs~ ]]with a ~command~ argument and an empty list for its ~arguments~ (the default value). For example:
+
+#+begin_src nix
+pkgs.spago-nix.utils.fromNodeApp {
+  app = project.nodeAppWithArgs {
+    main = "The.Main.Module";
+    # or you can leave it empty, a default will be created
+    command = "command-name";
+    # this is the default
+    arguments = [ ];
+  };
+}
+#+end_src
+
+Generally, however, this helper is not useful for ~nodeAppWithArgs~: the resulting ~node~ invocation is always executed with the provided arguments
+***** Returns :noexport:
+Flake app
+***** Arguments :noexport:
+- ~app~ :: (*Required*)
+  A derivation containing an executable in a ~bin~ directory and which can be called by Node
+  - Type :: /derivation/
+
+**** ~fromDocs~
+Serve compiled documentation from ~localhost~
+***** Returns :noexport:
+Flake app
+***** Arguments :noexport:
+- ~docs~ :: (*Required*)
+  A derivation containing the compiled project documentation in the correct directories (~generated-docs~). Can be obtained from [[#builddocs][ ~buildDocs~ ]]
+  - Type :: /derivation/
+- ~port~ ::
+  The port on which the local webserver will run
+  - Type :: /integer/
+  - Default ::
+    #+begin_src nix
+    8080
+    #+end_src
+  - Example ::
+    #+begin_src nix
+    9999
+    #+end_src
+
 * Library functions
 These functions are made available in the attribute set returned by [[#spago-nixspagoproject][ ~spagoProject~ ]]. Because Spago has no mechanism for describing different project components (libraries, executables, tests, etc...), ~spago.nix~ cannot generate outputs for you automatically (some outputs can be generated and put into the [[#flake][ ~flake~ ]] attribute). To work around this, the following functions provide a more complete interface for different commands that ~spago~ offers
 ** ~bundleModule~
 Bundles the project into a CommonJS module using the provided ~main~ module to the output filepath indicated by ~to~
-*** Returns
+*** Returns :noexport:
 /derivation/
-*** Arguments
+*** Arguments :noexport:
 - ~main~ ::
   The main Purescript module to bundle (the module name, not a filepath), used as the bundled module's entrypoint
   - Type :: /string/
@@ -200,9 +252,9 @@ Bundles the project into a CommonJS module using the provided ~main~ module to t
 
 ** ~bundleApp~
 Bundles the project into an executable that can be run with Node, using the provided ~main~ module to the output filepath indicated by ~to~. *Note*: Although this is bundled into an app, it cannot be run on its own and is mostly useful if you want to use it in another derivation. You will still need to call ~node~ to execute it and set the ~NODE_PATH~ if necessary. You can also use [[#nodeapp][ ~nodeApp~ ]] or [[#nodeappwithargs][ ~nodeAppWithArgs~ ]] , both of which perform these steps for you.
-*** Returns
+*** Returns :noexport:
 /derivation/
-*** Arguments
+*** Arguments :noexport:
 - ~main~ ::
   The main Purescript module to bundle (the module name, not a filepath), used as the bundled app's entrypoint
   - Type :: /string/
@@ -237,9 +289,9 @@ Bundles the project into an executable that can be run with Node, using the prov
 
 ** ~runTest~
 Calls the Purescript entrypoint specified by ~testMain~ without writing to ~$out~. Suitable for use as part of your flake ~checks~ (if the returns a non-zero exit code, the check will fail)
-*** Returns
+*** Returns :noexport:
 /derivation/
-*** Arguments
+*** Arguments :noexport:
 - ~testMain~ ::
   The main Purescript module that acts as an entrypoint
   - Type :: /string/
@@ -287,9 +339,9 @@ Calls the Purescript entrypoint specified by ~testMain~ without writing to ~$out
 
 ** ~runTestWithArgs~
 Calls the Purescript entrypoint (specified by ~testMain~) with Node and without writing to ~$out~. Provides the specified ~command~ and ~arugments~ to the Node invocation; this is useful if your test requires or parses specific arguments. Also suitable for use as part of your flake ~checks~ (if the returns a non-zero exit code, the check will fail to build)
-*** Returns
+*** Returns :noexport:
 /derivation/
-*** Arguments
+*** Arguments :noexport:
 - ~testMain~ ::
   The main Purescript module that acts as an entrypoint
   - Type :: /string/
@@ -362,9 +414,9 @@ Calls the Purescript entrypoint (specified by ~testMain~) with Node and without 
 
 ** ~nodeApp~
 Creates an executable from the Purescript entrypoint (specified by ~main~) that calls Node, installing it to ~$out/bin/name~. This is similar to [[#bundleapp][ ~bundleApp~ ]] above, but calls ~node~ for you and also sets the correct ~NODE_PATH~ using the ~nodeModules~ that have been generated for the project (unless overridden)
-*** Returns
+*** Returns :noexport:
 /derivation/
-*** Arguments
+*** Arguments :noexport:
 - ~main~ ::
   The main Purescript module that acts as an entrypoint
   - Type :: /string/
@@ -412,9 +464,9 @@ Creates an executable from the Purescript entrypoint (specified by ~main~) that 
 
 ** ~nodeAppWithArgs~
   Similar to [[#nodeapp][ ~nodeApp~ ]] above, but also allows for passing a command name and list of arguments. *Note*: This is useful if you want to call an application with the same set of arguments each time -- specifically, those passed with the provided list of ~arguments~ will always be used
-*** Returns
+*** Returns :noexport:
 /derivation/
-*** Arguments
+*** Arguments :noexport:
 - ~main~ ::
   The main Purescript module that acts as an entrypoint
   - Type :: /string/
@@ -463,9 +515,9 @@ Creates an executable from the Purescript entrypoint (specified by ~main~) that 
 ** ~buildDocs~
   Compiles the project documentation, either solely for dependencies if ~depsOnly~ is enabled, or for all modules including the project sources (the default behavior).
   *Note*: If you set the ~withDocs~ argument to ~true~ (the default value) in [[#spago-nixspagoproject][ ~spagoProject~ ]], a ~docs~ attribute will be built and added to ~flake.packages~.
-*** Returns
+*** Returns :noexport:
 /derivation/
-*** Arguments
+*** Arguments :noexport:
 - ~format~ ::
   The format for the resulting compiled documentation
   - Type :: one of "~html~" or "~markdown~"
