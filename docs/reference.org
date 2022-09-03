@@ -13,7 +13,7 @@
     - [[#fromnodeapp][ ~fromNodeApp~ ]]
     - [[#fromdocs][ ~fromDocs~ ]]
   - [[#spago-nixutilsjs][ ~spago-nix.utils.js~ ]]
-    - [[#nodemodulefor][ ~nodeModuleFor~ ]]
+    - [[#nodemodulesfor][ ~nodeModulesFor~ ]]
 - [[#library-functions][Library functions]]
   - [[#bundlemodule][ ~bundleModule~ ]]
   - [[#bundleapp][ ~bundleApp~ ]]
@@ -221,7 +221,7 @@ Flake app
 
 ** ~spago-nix.utils.js~
 Contains Javascript-specific utilities
-*** ~nodeModuleFor~
+*** ~nodeModulesFor~
 Generates ~node_modules~. This is called inside ~spagoProject~ and made available to users as it may be occasionally desirable to override the ~nodeModules~ that are used in different project derivations (e.g. to include/exclude the ~devDependencies~ listed in the ~package.json~). Contains ~lib~ and ~bin~ subdirectories, the former holding the ~node_modules~
 **** Returns :noexport:
 /derivation/
