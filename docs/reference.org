@@ -2,6 +2,14 @@
 
 ~spago.nix~ offers a number of functions providing Nix integration for Spago projects. These are contained in a top-level ~spago-nix~ namespace that can be accessed by applying its overlay (~overlays.default~ provided by the ~spago.nix~ flake). This document provides an overview of the different library functions and data structures that are made available.
 
+* Table of Contents :toc:
+- [[#top-level-attributes][Top-level attributes]]
+  - [[#spago-nixspagoproject][~spago-nix.spagoProject~]]
+- [[#library-functions][Library functions]]
+  - [[#bundlemodule][~bundleModule~]]
+  - [[#bundleapp][~bundleApp~]]
+- [[#other][Other]]
+
 * Top-level attributes
 ** ~spago-nix.spagoProject~
 *** Arguments
@@ -147,3 +155,100 @@
     #+end_src
 
 * Library functions
+** ~bundleModule~
+Bundles the project into a CommonJS module using the provided ~main~ module to the output filepath indicated by ~to~
+*** Returns
+/derivation/
+*** Args
+- ~main~ ::
+  - Type :: /string/
+  - Description :: The main Purescript module to bundle (the module name, not a filepath), used as the bundled module's entrypoint
+  - Default ::
+    #+begin_src nix
+    "Main"
+    #+end_src
+  - Example ::
+    #+begin_src nix
+    "Package.Module.Main"
+    #+end_src
+
+- ~to~ ::
+  - Type :: /string/
+  - Description :: The target filepath that the bundled module will be written to
+  - Default ::
+    #+begin_src nix
+    "index.js"
+    #+end_src
+  - Example ::
+    #+begin_src nix
+    "output.js"
+    #+end_src
+
+- ~nodeModules~ ::
+  - Type :: /derivation/
+  - Description :: Overrides the ~nodeModules~ used internally, which default to the project-wide ones
+  - Example ::
+    #+begin_src nix
+    spago-nix.utils.js.mkNodeModules {
+      development = false;
+      /* snip */
+    }
+    #+end_src
+
+- ~name~ ::
+  - Type :: /string/
+  - Description :: Overrides the ~name~ used for the derivation, which is otherwise derived from the ~name~ arg to ~spagoProject~
+  - Example ::
+    #+begin_src nix
+    "my-bundled-module"
+    #+end_src
+
+** ~bundleApp~
+Bundles the project into an executable that can be run with NodeJS, using the provided ~main~ module to the output filepath indicated by ~to~
+*** Returns
+/derivation/
+*** Args
+- ~main~ ::
+  - Type :: /string/
+  - Description :: The main Purescript module to bundle (the module name, not a filepath), used as the bundled app's entrypoint
+  - Default ::
+    #+begin_src nix
+    "Main"
+    #+end_src
+  - Example ::
+    #+begin_src nix
+    "Package.Module.Main"
+    #+end_src
+
+- ~to~ ::
+  - Type :: /string/
+  - Description :: The target filepath that the bundled app will be written to
+  - Default ::
+    #+begin_src nix
+    "index.js"
+    #+end_src
+  - Example ::
+    #+begin_src nix
+    "output.js"
+    #+end_src
+
+- ~nodeModules~ ::
+  - Type :: /derivation/
+  - Description :: Overrides the ~nodeModules~ used internally, which default to the project-wide ones
+  - Example ::
+    #+begin_src nix
+    spago-nix.utils.js.mkNodeModules {
+      development = false;
+      /* snip */
+    }
+    #+end_src
+
+- ~name~ ::
+  - Type :: /string/
+  - Description :: Overrides the ~name~ used for the derivation, which is otherwise derived from the ~name~ arg to ~spagoProject~
+  - Example ::
+    #+begin_src nix
+    "my-bundled-app"
+    #+end_src
+
+* Other

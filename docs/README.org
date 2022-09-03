@@ -1,7 +1,9 @@
 #+title: ~spago.nix~
 #+export_file_name: ../README.org
 
-* ToC :toc:
+🍝.❄
+
+* Table of Contents :toc:
 - [[#introduction][Introduction]]
 - [[#quick-start][Quick Start]]
 - [[#motivation][Motivation]]
