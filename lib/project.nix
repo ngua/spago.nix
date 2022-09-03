@@ -489,7 +489,12 @@ let
         let
           modules = args.nodeModules or nodeModules;
           exportEnv = builtins.concatStringsSep "\n"
-            (lib.mapAttrsToList (k: v: "export ${k}=${v}") env);
+            (lib.mapAttrsToList
+              (
+                k: v: "export ${k}=${builtins.toString v}"
+              )
+              env
+            );
         in
         ''
           export NODE_PATH="${modules}/lib/node_modules"
