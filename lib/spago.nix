@@ -44,7 +44,7 @@ rec {
         # }
         # ```
         #
-        fromNodeApp = { app }: appHelper ''${app}/bin/${app.name} "$@"'';
+        fromNodeApp = { app }: appHelper ''${app}/bin/${app.name}'';
 
         fromDocs = { docs, port ? 8080 }:
           let
