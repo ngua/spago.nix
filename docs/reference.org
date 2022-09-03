@@ -467,7 +467,7 @@ Creates an executable from the Purescript entrypoint (specified by ~main~) that 
 /derivation/
 *** Args
 - ~format~ ::
-  - Type :: /one of ~"html"~ or ~"markdown"~ /
+  - Type :: one of "~html~" or "~markdown~"
   - Description :: The format for the resulting compiled documentation
   - Default ::
     #+begin_src nix
