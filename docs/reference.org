@@ -10,6 +10,8 @@
   - [[#spago-nixutilsapps][~spago-nix.utils.apps~]]
     - [[#fromnodeapp][~fromNodeApp~]]
     - [[#fromdocs][~fromDocs~]]
+  - [[#spago-nixutilsjs][~spago-nix.utils.js~]]
+    - [[#nodemodulefor][~nodeModuleFor~]]
 - [[#library-functions][Library functions]]
   - [[#bundlemodule][~bundleModule~]]
   - [[#bundleapp][~bundleApp~]]
@@ -169,7 +171,6 @@ This is the primary interface to working with ~spago.nix~. It takes a ~src~ cont
 
 ** ~spago-nix.utils.apps~
 This contains utilities for working with flake ~apps~. As these can be applied outside of the context of ~spagoProject~, they are not returned from that function unlike the [[#library-functions][other functions]] documented below
-
 *** ~fromNodeApp~
 Turn a NodeJS app (e.g. using [[#nodeapp][ ~nodeApp~ ]]) into a flake app. If you pass arguments to the ~nix run~ invocation, these will be passed to the provided application.
 
@@ -213,6 +214,54 @@ Flake app
   - Example ::
     #+begin_src nix
     9999
+    #+end_src
+
+
+** ~spago-nix.utils.js~
+Contains Javascript-specific utilities
+*** ~nodeModuleFor~
+Generates ~node_modules~. This is called inside ~spagoProject~ and made available to users as it may be occasionally desirable to override the ~nodeModules~ that are used in different project derivations (e.g. to include/exclude the ~devDependencies~ listed in the ~package.json~). Contains ~lib~ and ~bin~ subdirectories, the former holding the ~node_modules~
+**** Returns :noexport:
+/derivation/
+**** Arguments :noexport:
+- ~packageJson~ :: (*Required*)
+  Store path pointint to the ~package.json~
+  - Type :: /path/
+- ~packageLock~ :: (*Required*)
+  Store path pointint to the ~package-lock.json~
+  - Type :: /path/
+- ~name~ ::
+  String appended to the store path containing the generated modules
+  - Type :: /string/
+  - Default ::
+    #+begin_src nix
+    ""
+    #+end_src
+  - Example ::
+    #+begin_src nix
+    "my-project" # produces `node-modules-my-project`
+    #+end_src
+- ~nodejs~ ::
+  The specific version of ~nodejs~ to use
+  - Type :: /derivation/
+  - Default ::
+    #+begin_src nix
+    pkgs.nodejs-14_x
+    #+end_src
+  - Example ::
+    #+begin_src nix
+    pkgs.nodejs-18_x
+    #+end_src
+- ~development~ ::
+  If ~true~, the ~nodeModules~ will contain all ~devDependencies~
+  - Type :: /boolean/
+  - Default ::
+    #+begin_src nix
+    true
+    #+end_src
+  - Example ::
+    #+begin_src nix
+    false
     #+end_src
 
 * Library functions
