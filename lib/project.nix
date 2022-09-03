@@ -417,7 +417,12 @@ let
   callNodeWithArgs = { output, arguments, command, main }:
     let
       sepSpace = builtins.concatStringsSep " ";
-      nodeArgs = sepSpace [ command (sepSpace arguments) ];
+      arguments' =
+        if arguments == [ ] then
+          ''"$@"''
+        else
+          sepSpace arguments;
+      nodeArgs = sepSpace [ command arguments' ];
     in
     ''node -e 'require("./output/${main}").main()' ${nodeArgs}'';
 
@@ -521,7 +526,7 @@ let
   # with a command name and arguments
   #
   # NOTE: You must provide the command name as Node's `process.argv` includes
-  # this as the first argument to the running application
+  # this as the first argument to the invoked application
   nodeAppWithArgs =
     { main ? "Main" # The main Purescript entrypoint
       # Extra environment variables; will be `export`ed in the script.

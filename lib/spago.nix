@@ -34,18 +34,18 @@ rec {
         # and pass an empty list of `arguments` (the default value), e.g.:
         #
         # ```
-        # node-app = pkgs.spago-nix.utils.fromNodeApp (
-        #   project.nodeAppWithArgs {
+        # node-app = pkgs.spago-nix.utils.fromNodeApp {
+        #   app = project.nodeAppWithArgs {
         #     main = "The.Main.Module";
         #     # or you can leave it empty, a default will be created
         #     command = "the-command";
         #     # this is the default
         #     arguments = [ ];
-        #   }
-        # )
+        #   };
+        # }
         # ```
         #
-        fromNodeApp = app: appHelper ''${app}/bin/${app.name} "$@"'';
+        fromNodeApp = { app }: appHelper ''${app}/bin/${app.name} "$@"'';
 
         fromDocs = { docs, port ? 8080 }:
           let
