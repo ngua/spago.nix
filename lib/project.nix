@@ -282,8 +282,10 @@ let
         [
           (lib.optionalString (flags.strict or true) "--strict")
           (
-            lib.optionalString
-              ((flags.censorCodes or [ ]) != [ ])
+            let
+              censorCodes = flags.censorCodes or [ ];
+            in
+            lib.optionalString (censorCodes != [ ])
               ''--censor-codes=${builtins.concatStringsSep "," censorCodes}''
           )
           "--censor-lib --is-lib=.spago"
@@ -399,7 +401,7 @@ let
     { main ? "Main" # The main Purescript entrypoint
     , to ? "index.js" # The file to write to, corresponds to `--to` flag
     , ...
-    }@args: bundle ({ type = "module"; } // args);
+    }@args: bundle ({ inherit main to; type = "module"; } // args);
 
   # Bundle an app, corresponding to `spago bundle-app`
   bundleApp =
@@ -410,7 +412,7 @@ let
     , to ? "index.js"
     , ...
     }@args:
-    bundle ({ type = "app"; } // args);
+    bundle ({ inherit main to; type = "app"; } // args);
 
   callNodeWithArgs = { output, arguments, command, main }:
     let
@@ -454,7 +456,7 @@ let
     { testMain ? "Test.Main" # The main Purescript entrypoint
     , env ? { } # Extra environment variables
     , ...
-    }@args: runTest' args;
+    }@args: runTest' ({ inherit testMain env; } // args);
 
 
   # Directly run a test corresponding to the provided Purescript main module,
@@ -465,12 +467,12 @@ let
   runTestWithArgs =
     { testMain ? "Test.Main" # The main Purescript entrypoint
     , env ? { } # Extra environment variables
-    , command
+    , command ? nameFromMain testMain
     , arguments ? [ ]
     , ...
     }@args:
       assert lib.asserts.assertMsg (command != "") "Command name cannot be empty";
-      runTest' args;
+      runTest' ({ inherit testMain env command arguments; } // args);
 
   # Create an executable from a Purescript main module and install it to the
   # given path
@@ -508,7 +510,7 @@ let
       # done automatically for you
     , env ? { }
     , ...
-    }@args: nodeApp' args;
+    }@args: nodeApp' ({ inherit main env; } // args);
 
   # Directly run a test corresponding to the provided Purescript main module,
   # with a command name and arguments
@@ -522,13 +524,13 @@ let
       # NOTE: You might wish to use `lib.strings.escapeShellArg` as this is not
       # done automatically for you
     , env ? { }
-    , command
+    , command ? nameFromMain main
     , arguments ? [ ]
     , ...
     }@args:
       assert lib.asserts.assertMsg (command != "")
         "Command name cannot be empty";
-      nodeApp' args;
+      nodeApp' ({ inherit main env command arguments; } // args);
 
   docsDeps = { format ? "html" }:
     assert lib.assertOneOf "format" format [ "html" "markdown" ];
