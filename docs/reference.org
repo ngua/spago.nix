@@ -4,11 +4,12 @@
 
 ~spago.nix~ offers a number of functions providing Nix integration for Spago projects. These are contained in a top-level ~spago-nix~ namespace that can be accessed by applying its overlay (~overlays.default~ provided by the ~spago.nix~ flake). This document provides an overview of the different library functions and data structures that are made available.
 
-* Table of Contents :toc@3:
+* Table of Contents :toc@4:
 - [[#top-level-attributes][Top-level attributes]]
   - [[#spago-nixspagoproject][~spago-nix.spagoProject~]]
-  - [[#spago-nixutils][~spago-nix.utils.*~]]
-    - [[#apps][~apps~]]
+  - [[#spago-nixutilsapps][~spago-nix.utils.apps~]]
+    - [[#fromnodeapp][~fromNodeApp~]]
+    - [[#fromdocs][~fromDocs~]]
 - [[#library-functions][Library functions]]
   - [[#bundlemodule][~bundleModule~]]
   - [[#bundleapp][~bundleApp~]]
@@ -19,6 +20,9 @@
   - [[#builddocs][~buildDocs~]]
 - [[#other][Other]]
   - [[#flake][~flake~]]
+    - [[#devshells][~devShells~]]
+    - [[#packages][~packages~]]
+    - [[#apps][~apps~]]
 
 * Top-level attributes
 ** ~spago-nix.spagoProject~
@@ -163,10 +167,10 @@ This is the primary interface to working with ~spago.nix~. It takes a ~src~ cont
     false
     #+end_src
 
-** ~spago-nix.utils.*~
-This contains several utilities for working with derivations related to Purescript. As most of these can be applied outside of the context of ~spagoProject~, they are not returned from that function unlike the [[#library-functions][other functions]] documented below
-*** ~apps~
-**** ~fromNodeApp~
+** ~spago-nix.utils.apps~
+This contains utilities for working with flake ~apps~. As these can be applied outside of the context of ~spagoProject~, they are not returned from that function unlike the [[#library-functions][other functions]] documented below
+
+*** ~fromNodeApp~
 Turn a NodeJS app (e.g. using [[#nodeapp][ ~nodeApp~ ]]) into a flake app. If you pass arguments to the ~nix run~ invocation, these will be passed to the provided application.
 
 *Note*: If you do pass command-line arguments, you should provide the command name as the first argument on the command line (Node's ~proces.env.argv~ always contains the command's name as its first element). Alternately, the provided ~app~ can be created using [[#nodeappwithargs][ ~nodeAppWithArgs~ ]]with a ~command~ argument and an empty list for its ~arguments~ (the default value). For example:
@@ -184,18 +188,18 @@ pkgs.spago-nix.utils.fromNodeApp {
 #+end_src
 
 Generally, however, this helper is not useful for ~nodeAppWithArgs~: the resulting ~node~ invocation is always executed with the provided arguments
-***** Returns :noexport:
+**** Returns :noexport:
 Flake app
-***** Arguments :noexport:
+**** Arguments :noexport:
 - ~app~ :: (*Required*)
   A derivation containing an executable in a ~bin~ directory and which can be called by Node
   - Type :: /derivation/
 
-**** ~fromDocs~
+*** ~fromDocs~
 Serve compiled documentation from ~localhost~
-***** Returns :noexport:
+**** Returns :noexport:
 Flake app
-***** Arguments :noexport:
+**** Arguments :noexport:
 - ~docs~ :: (*Required*)
   A derivation containing the compiled project documentation in the correct directories (~generated-docs~). Can be obtained from [[#builddocs][ ~buildDocs~ ]]
   - Type :: /derivation/
@@ -213,6 +217,7 @@ Flake app
 
 * Library functions
 These functions are made available in the attribute set returned by [[#spago-nixspagoproject][ ~spagoProject~ ]]. Because Spago has no mechanism for describing different project components (libraries, executables, tests, etc...), ~spago.nix~ cannot generate outputs for you automatically (some outputs can be generated and put into the [[#flake][ ~flake~ ]] attribute). To work around this, the following functions provide a more complete interface for different commands that ~spago~ offers
+
 ** ~bundleModule~
 Bundles the project into a CommonJS module using the provided ~main~ module to the output filepath indicated by ~to~
 *** Returns :noexport:
@@ -545,16 +550,14 @@ Creates an executable from the Purescript entrypoint (specified by ~main~) that 
 * Other
 ** ~flake~
 This is a set returned from the [[#spago-nixspagoproject][ ~spagoProject~ ]] function and contains the following attributes. Its structure mirrors the ~outputs~ of a ~flake.nix~:
-- ~devShells~ ::
-  - ~default~ ::
-    Contains a development environment corresponding to the options provided to ~spagoProject~'s ~shell~ argument. Irrespective of the selected options, it will always contain a version of ~purs~ that corresponds to your upstream package set as well as ~spago~
-- ~devShell~ ::
-  An alias for ~devShells.default~
-- ~packages~ ::
-  - ~output~ ::
-    This holds the ~output~ directory that is created by ~purs~ when compiling the project's sources. It can be used in subsequent derivations. It copies the ~src~ as well: if you read from a file from a relative path in your Purescript code, ~purs~ doesn't copy it into the ~output~ directory. This behavior may change in the future.
-  - ~docs~ ::
-    This is only added to the ~flake~ if ~withDocs~ is enabled (the default). It contains the ~generated-docs~ and ~output~ directory produced by ~spago docs~. It uses the default format (~html~) and includes the project's sources as well. If you set ~withDocs~ to ~false~, you can still build documentation with more customization options using [[#builddocs][ ~buildDocs~ ]] (but it will not be automatically added to the ~flake~ of course)
-- ~apps~ ::
-  - ~docs~ ::
-    As with ~packages.docs~, this is only added to the ~flake~ if ~withDocs~ is enabled. It builds uses that derivation to serve documentation on ~localhost:8080~. If you do not enable ~withDocs~, then you can use ~spago-nix.utils.apps.fromDocs~ to create a local documentation server with more options
+*** ~devShells~
+- ~default~ ::
+  Contains a development environment corresponding to the options provided to ~spagoProject~'s ~shell~ argument. Irrespective of the selected options, it will always contain a version of ~purs~ that corresponds to your upstream package set as well as ~spago~. Also aliased to the ~devShell~ attribute
+*** ~packages~
+- ~output~ ::
+  This holds the ~output~ directory that is created by ~purs~ when compiling the project's sources. It can be used in subsequent derivations. It copies the ~src~ as well: if you read from a file from a relative path in your Purescript code, ~purs~ doesn't copy it into the ~output~ directory. This behavior may change in the future.
+- ~docs~ ::
+  This is only added to the ~flake~ if ~withDocs~ is enabled (the default). It contains the ~generated-docs~ and ~output~ directory produced by ~spago docs~. It uses the default format (~html~) and includes the project's sources as well. If you set ~withDocs~ to ~false~, you can still build documentation with more customization options using [[#builddocs][ ~buildDocs~ ]] (but it will not be automatically added to the ~flake~ of course)
+*** ~apps~
+- ~docs~ ::
+  As with ~packages.docs~, this is only added to the ~flake~ if ~withDocs~ is enabled. It builds uses that derivation to serve documentation on ~localhost:8080~. If you do not enable ~withDocs~, then you can use ~spago-nix.utils.apps.fromDocs~ to create a local documentation server with more options
