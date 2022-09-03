@@ -16,6 +16,21 @@
         "type": "github"
       }
     },
+    "flake-utils": {
+      "locked": {
+        "lastModified": 1659877975,
+        "narHash": "sha256-zllb8aq3YO3h8B/U0/J1WBgAL8EX5yWf5pMj3G0NAmc=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "c0e246b9b83f637f4681389ecabcb2681b4f3af0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "lattice": {
       "flake": false,
       "locked": {
@@ -68,6 +83,7 @@
     },
     "root": {
       "inputs": {
+        "flake-utils": "flake-utils",
         "lattice": "lattice",
         "nixpkgs": [
           "spago-nix",
@@ -83,11 +99,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1662206469,
-        "narHash": "sha256-PeGBUKBivDEv7z2/LkfPMHXeB8nXGIE6Lp2/p5l8cp4=",
+        "lastModified": 1662213735,
+        "narHash": "sha256-rYDT5fZ+AKMkgDNEF36HLnDJcME6HmGD1oDI26FVGVw=",
         "owner": "ngua",
         "repo": "spago.nix",
-        "rev": "be6b6eac9578a52d9123560e882ac87adaba97a2",
+        "rev": "6e0196eab3535d5800e0f5bfe7353ec71db3b317",
         "type": "github"
       },
       "original": {
