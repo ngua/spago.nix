@@ -1,4 +1,4 @@
-# Created 2022-09-04 Sun 19:43
+# Created 2022-09-04 Sun 19:47
 #+title: ~spago.nix~
 #+author: Rory Tyler Hayford
 #+export_file_name: ../README.org
@@ -135,7 +135,7 @@ Most of the time, a user's ~spago-packages.nix~ will primarily contain the same 
        let upstream =
            https://github.com/purescript/package-sets/releases/download/psc-0.x.x/packages.dhall
                sha256:0000000000000000000000000000000000000000000000000000000000000000
-       -- Any subsequent `let`-bound records are interpreted as additinal (third-party)
+       -- Any subsequent `let`-bound records are interpreted as additional (third-party)
        -- dependencies
        let additions =
            { foo =
