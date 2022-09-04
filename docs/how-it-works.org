@@ -1,0 +1,31 @@
+#+title: How ~spago.nix~ Works
+
+~spago.nix~ is comprised of two components: a (very) small Haskell program and the Nix code that actually provides the integration with Spago projects (see the [[file:./reference.org][reference]] for a description of the interface).
+
+The fundamental problem with using Spago with Nix is the lack of build-time purity in both the ~spago~ tool itself as well as Dhall, its configuration language. Specifically, we are limited by the following features:
+
+- Spago's frequent tendency to download dependencies or metadata with no easy way to disable this behavior (although this may be implemented [[github:purescript/spago/pull/841][at some point]])
+- An inability to specify the hashes of individual dependencies in ~packages.dhall~
+- Dhall's importing mechanism, which uses URLs directly
+
+~spago.nix~ works around this in several ways. The Haskell executable performs two entirely separate functions that mitigate the second and third limitations above:
+
+- One component takes upstream package sets (e.g. ~psc-0.15.4~) and reads them using the ~dhall~ Haskell library directly. It takes each entry in the Dhall record representing the upstream package set, calculates the sha256 hash for each package, and then converts the Dhall record to a Nix expression. This is necessarily impure, but it does not happen when parsing a user's ~packages.dhall~. Instead, all of the upstreams are [[file:~/projects/spago.nix/package-sets/][stored]] in this repository and looked up when creating a Nix package set for a user's project. See the corresponding [[file:~/projects/spago.nix/generate.sh][script]] that wraps all of these actions for more details.
+- The other component reads a user's ~packages.dhall~ (also using the ~dhall~ library) and extracts all of the ~let~ bindings. None of the ~import~ statements are resolved as this would of course require network access. Instead, any ~let~-bound ~import~ s are stored as upstreams, and any additional ~let~-bound records  are stored as additional/override (third-party) depdendencies. The Haskell data structure is converted to Nix and then written to disk. In ~spago.nix~'s Nix component, this Haskell tool is called and the generated Nix module is then imported (i.e. using IFD). The upstream package set is looked up and imported directly. All of the additional dependencies, however, must be provided in one of two ways:
+  - Directly, using ~extraSources~ (the recommended approach)
+  - Indirectly, by providing a ~sha256map~ with the necessary information to fetch the package with ~fetchgit~
+  This approach has some large limitations, however, namely
+  - Any imported package sets /without/ a corresponding Nix expression stored in the ~spago.nix~ repository won't work
+  - The first ~import~ statement is taken as the upstream package set (the ~import~ s are extracted and stored as well, but at the moment they are entirely ignored)
+  - All definitions must currently be ~let~ bound (although support for using ~with~ is planned and should be implemented in the near future)
+
+The primary function of the Haskell project is to convert Dhall to Nix. It would be tempting to use the existing [[https:hackage.haskell.org/package/dhall-nix][ ~dhall-nix~ ]] project to do this, yet unfortunately this is not possible. Quite reasonably, ~dhall-nix~ will always load the ~import~ statements in the provided Dhall expression. This means we cannot use it during pure build phases however.
+
+Once all of the Purescript dependencies have been identified and collected, ~spago.nix~ then performs several steps to create and build the project via Nix. Along the way, it takes steps to ensure purity and prevent ~spago~ from connecting to the network:
+
+- ~spago~ will /not/ attempt network connections when a global cache is present. Several internal derivations in ~spagoProject~ build a fake package cache in ~$TMP~ by symlinking the generated packages and setting the ~$XDG_CACHE_HOME~ variable accordingly.
+- A call to ~spago ls deps~ is made to get the exact dependencies of the project (this filters out any packages in the upstream package set but which the project does not depend on; if this were not done, /all/ of the upstream would be built every time). This resulting JSON is converted to a Nix expression and then imported.
+- Any time ~spago~ is called, this exact package set is symlinked to ~$PWD/.spago~. This will prevent ~spago~ from attempting to install any packages (occasionally the ~--no-install~ flag is also required).
+- All ~spago~ commands expect a ~spago.dhall~ in the ~$PWD~. However, this file also contains a ~packages~ field pointing to a ~packages.dhall~ -- which invariably import remote URLs (i.e. the upstream package set). If the project's provided ~packages.dhall~ were used, however, the ~import~ would be loaded and the build would fail. To work around this, ~spago.nix~ reconstitutes a ~packages.dhall~ with all ~import~ s inlined; this is done by combining the literal Dhall text of both the selected upstream (this is stored along with the generated Nix expressions in the repository) and the additional/override dependencies.
+
+As you can see, ~spago.nix~ makes heavy use of IFD to generate the Nix project. One downside to this is that ~nix flake check~ will not work, which is generally incompatible with IFD.
