@@ -1,4 +1,4 @@
-# Created 2022-09-04 Sun 19:53
+# Created 2022-09-04 Sun 19:57
 #+title: ~spago.nix~
 #+author: Rory Tyler Hayford
 #+export_file_name: ../README.org
@@ -118,7 +118,7 @@ The status quo for building Purescript projects with Nix is unfortunately quite 
 
 The current default choice for Purescript users wanting to build with Nix is ~spago2nix~, which is affected by these limitations. ~spago2nix~ approaches the lack of hashes by calling ~nix-prefetch-git~ for each dependency (as does ~spago.nix~, but in a different step that does not directly affect users). This also prevents ~spago2nix~ from being run in a pure environment, however. This could be worked around by using fixed-output derivations with ~spago2nix~, but that would lead to an unpleasant interface.
 
-Because of this fundamental limitation, ~spago2nix~ requires generating and committing Nix code (its ~spago-packages.nix~). Obscure build errors can arise when users forget to run ~spago2nix generate~, which is not especially rare in my experience. ~spago2nix~ also provides a fairly limited interface that is quite far from that of ~spago~ -- if users wish to build project documentation, for example, they must write derivations by hand.
+Because of this fundamental limitation, ~spago2nix~ requires generating and committing Nix code (its ~spago-packages.nix~). Obscure build errors can arise when users forget to run ~spago2nix generate~, which is not especially rare in my experience. ~spago2nix~ also provides a fairly limited interface that is quite far from that of ~spago~ -- if users wish to build project documentation, for example, they must write derivations by hand. Its interface for building a Spago project consists of a single derivation -- ~build-spago-style~ -- that does not allow for any control over or customization of the build process (it calls ~purs~ directly with the provided sources). ~spago2nix~ also does not use ~spago~ internally, which means that  the experience of building the same project might differ depending on the context (i.e either inside or outside of Nix).
 
 Most of the time, a user's ~spago-packages.nix~ will primarily contain the same Purescript packages from upstream package sets. Instead of requiring the user to always generate Nix package sets containing hashes for each dependency, we can generate them and then store them centrally in a repository. This emulates package sets like ~nodePackages~ and, most importantly, allows us to create a suitable package set for users in a pure environment, thus freeing them from needing to generated Nix code. See [[file:./docs/how-it-works.org][how ~spago.nix~ works]] for more details on its approach.
 
