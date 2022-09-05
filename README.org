@@ -1,4 +1,4 @@
-# Created 2022-09-05 Mon 11:41
+# Created 2022-09-05 Mon 11:42
 #+title: ~spago.nix~
 #+author: Rory Tyler Hayford
 #+export_file_name: ../README.org
@@ -165,7 +165,7 @@ Most of the time, a user's ~spago-packages.nix~ will primarily contain the same 
      #+end_src
 
 - Alternate backends aren't supported :: 
-     Currently, using alternate Purescript backends is not supported (e.g. [[https://github.com/andyarvanitis/purescript-native][psnative]]). This may change in the future, although these backends are generally not up-to-date with ~purs~ itself.
+     Currently, using alternate Purescript backends is not supported (e.g. [[https://github.com/andyarvanitis/purescript-native][purescript-native]]). This may change in the future, although these backends are generally not up-to-date with ~purs~ itself.
 
 * Acknowledgments
 TODO

@@ -85,7 +85,7 @@ Most of the time, a user's ~spago-packages.nix~ will primarily contain the same 
   #+end_src
 
 - Alternate backends aren't supported ::
-  Currently, using alternate Purescript backends is not supported (e.g. [[github:andyarvanitis/purescript-native][psnative]]). This may change in the future, although these backends are generally not up-to-date with ~purs~ itself.
+  Currently, using alternate Purescript backends is not supported (e.g. [[github:andyarvanitis/purescript-native][purescript-native]]). This may change in the future, although these backends are generally not up-to-date with ~purs~ itself.
 
 * Acknowledgments
 TODO
