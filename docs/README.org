@@ -44,9 +44,10 @@ Most of the time, a user's ~spago-packages.nix~ will primarily contain the same 
 # The paths need to be set to `./doc/...` since this will be exported to `../README.org`
 - [[file:./docs/reference.org][Reference]]
 - [[file:./docs/how-it-works.org][How ~spago.nix~ works]]
+- [[file:./docs/faq.org][FAQ]]
 
 * Caveats
-[[file:./docs/how-it-works.org][The docs]] provide a brief overview of how ~spago.nix~ works. There are some consequences to the approach it uses, however, and ~spago.nix~ might not work with your Spago project. ~spago.nix~ is also under heavy development and some of its present limitations may be resolved in the future. In the meantime, the following caveats apply:
+[[file:./docs/how-it-works.org][The docs]] provide a brief overview of how ~spago.nix~ works. There are some consequences to the approach it uses, however, and ~spago.nix~ might not work with your Spago project. ~spago.nix~ is also under heavy development and some of its present limitations may be resolved in the future. In the meantime, the following major caveats apply:
 
 - All upstream package sets and third-party dependencies must be ~let~-bound in your ~packages.dhall~ ::
   ~spago.nix~ works in part by extracting information from your ~packages.dhall~, without ever fully evaluating the Dhall expression (e.g. no ~import~ statements are ever resolved to avoid network connections). The current approach to extracting this information is rather crude and only scans ~let~ bindings to gather the relevant information. The following format will work with ~spago.nix~:
@@ -92,5 +93,5 @@ TODO
 
 * Local variables :noexport:
 Local variables:
-eval: (add-hook 'after-save-hook 'org-org-export-to-org)
+eval: (add-hook 'after-save-hook 'org-org-export-to-org nil t)
 end:

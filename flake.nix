@@ -44,14 +44,6 @@
                 self.packages.${system}.pure-spago-nix
               ]
               ++ oas.buildInputs;
-
-            # `docs/README.org` contains an `INCLUDE` directive to insert the
-            # contents of an example flake.nix. This won't be rendered on GH
-            # though, so instead it's exported here to a root-level `README.org`,
-            # which will inline the text from the example
-            shellHook = ''
-              emacs docs/README.org --batch -f org-org-export-to-org --kill
-            '';
           })
       );
 

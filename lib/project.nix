@@ -335,6 +335,7 @@ let
       mkdir $out && cd $out
       cp -r ${src}/* .
       chmod -R +rwx .
+      cp ${spagoDhall} ./spago.dhall
       cp ${fakePackagesDhall}/packages.dhall .
       ln -s ${installed} .spago
       mkdir output
@@ -569,6 +570,7 @@ let
             cp -r ${src}/* .
             chmod -R +rwx .
             cp ${fakePackagesDhall}/packages.dhall .
+            cp ${spagoDhall} ./spago.dhall
 
             cp -r ${docsDeps { inherit format; }}/{generated-docs,output} .
             find ./output -exec touch -m -d '01/01/1970' {} +

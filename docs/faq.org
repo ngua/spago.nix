@@ -1,0 +1,7 @@
+#+title: ~spago.nix~ FAQ
+
+* Table of Contents :toc:
+- [[#why-does-changing-the-dependencies-in-my-spagodhall-rebuild-all-dependencies][Why does changing the ~dependencies~ in my ~spago.dhall~ rebuild /all/ dependencies?]]
+
+* Why does changing the ~dependencies~ in my ~spago.dhall~ rebuild /all/ dependencies?
+Currently, all of the project's dependencies are compiled together and re-used in later derivations. I haven't found a way to compile individual dependencies without triggering later rebuilds (~purs~ tracks rebuilds by comparing timestamps and hashes in a JSON file stored in ~output~). This /should/ be theoretically possible and may be implemented in the future.
