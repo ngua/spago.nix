@@ -6,26 +6,26 @@
  support imports with hashes (only official Purescript package sets) and
  records in `let`-bindings
 -}
-module Dependencies (
-  extractDependenciesIO,
-) where
+module Dependencies
+  ( extractDependenciesIO
+  ) where
 
 import Control.Exception (Exception (displayException), IOException)
-import Control.Lens (
-  at,
-  (%=),
-  (.=),
-  (?=),
-  (^.),
-  (^?),
-  _head,
- )
+import Control.Lens
+  ( at
+  , (%=)
+  , (.=)
+  , (?=)
+  , (^.)
+  , (^?)
+  , _head
+  )
 import Control.Monad (void, (<=<))
-import Control.Monad.Except (
-  MonadError (throwError),
-  liftEither,
-  runExceptT,
- )
+import Control.Monad.Except
+  ( MonadError (throwError)
+  , liftEither
+  , runExceptT
+  )
 import Control.Monad.State.Strict (MonadState, execStateT)
 import Data.Bifunctor (first)
 import Data.Kind (Type)
@@ -41,41 +41,42 @@ import Dhall.Parser qualified
 import Dhall.Pretty qualified
 import Prettyprinter qualified
 import Prettyprinter.Render.Text qualified
-import Types (
-  NixExpr (NixAttrSet, NixString),
-  NixStringLineSpan (Multi),
-  SpagoAddition (SpagoAddition, repo, version),
-  SpagoDependencies (additions, additionsDhall, imports),
-  SpagoDependencyError (
-    MissingImportHash,
-    MissingRecordField,
-    MissingUpstream,
-    UnsupportedRecord,
-    UnsupportedRemoteImport
-  ),
-  SpagoImport (SpagoImport, path, sha256),
-  emptyDependencies,
-  nixAttrSet,
-  nixString,
- )
+import Types
+  ( NixExpr (NixAttrSet, NixString)
+  , NixStringLineSpan (Multi)
+  , SpagoAddition (SpagoAddition, repo, version)
+  , SpagoDependencies (additions, additionsDhall, imports)
+  , SpagoDependencyError
+    ( MissingImportHash
+    , MissingRecordField
+    , MissingUpstream
+    , UnsupportedRecord
+    , UnsupportedRemoteImport
+    )
+  , SpagoImport (SpagoImport, path, sha256)
+  , emptyDependencies
+  , nixAttrSet
+  , nixString
+  )
 
 extractDependenciesIO :: FilePath -> IO NixExpr
 extractDependenciesIO =
   liftEither . first toIOException . dependenciesToNix
     <=< liftEither . first toIOException
     <=< runExtractDependencies
-    <=< liftEither . first (userError . show)
+    <=< liftEither
+      . first (userError . show)
       . Dhall.Parser.exprFromText "(spago-dependencies)"
     <=< Data.Text.IO.readFile
-  where
-    toIOException :: forall (a :: Type). Exception a => a -> IOException
-    toIOException = userError . displayException
+ where
+  toIOException :: forall (a :: Type). Exception a => a -> IOException
+  toIOException = userError . displayException
 
-dependenciesToNix ::
-  forall (m :: Type -> Type).
-  MonadError SpagoDependencyError m =>
-  SpagoDependencies ->
-  m NixExpr
+dependenciesToNix
+  :: forall (m :: Type -> Type)
+   . MonadError SpagoDependencyError m
+  => SpagoDependencies
+  -> m NixExpr
 dependenciesToNix deps = do
   -- Although we can extract any number of imports, we really only care about
   -- the first one (this should be an official Purescript package set)
@@ -90,43 +91,43 @@ dependenciesToNix deps = do
       , ("additions", NixAttrSet $ additionToAttrSet <$> deps.additions)
       , ("additions-dhall", NixString Multi deps.additionsDhall)
       ]
-  where
-    upstreamToAttrSet :: SpagoImport -> NixExpr
-    upstreamToAttrSet imp =
-      nixAttrSet
-        [ ("path", nixString imp.path)
-        ,
-          ( "sha256"
-          , nixString $
-              Dhall.Crypto.toString imp.sha256 ^. packed
-          )
-        ]
+ where
+  upstreamToAttrSet :: SpagoImport -> NixExpr
+  upstreamToAttrSet imp =
+    nixAttrSet
+      [ ("path", nixString imp.path)
+      ,
+        ( "sha256"
+        , nixString $
+            Dhall.Crypto.toString imp.sha256 ^. packed
+        )
+      ]
 
-    additionToAttrSet :: SpagoAddition -> NixExpr
-    additionToAttrSet add =
-      nixAttrSet
-        [ ("repo", nixString add.repo)
-        , ("version", nixString add.version)
-        ]
+  additionToAttrSet :: SpagoAddition -> NixExpr
+  additionToAttrSet add =
+    nixAttrSet
+      [ ("repo", nixString add.repo)
+      , ("version", nixString add.version)
+      ]
 
-runExtractDependencies ::
-  forall (m :: Type -> Type).
-  Monad m =>
-  Dhall.Expr Dhall.Parser.Src Dhall.Import ->
-  m (Either SpagoDependencyError SpagoDependencies)
+runExtractDependencies
+  :: forall (m :: Type -> Type)
+   . Monad m
+  => Dhall.Expr Dhall.Parser.Src Dhall.Import
+  -> m (Either SpagoDependencyError SpagoDependencies)
 runExtractDependencies =
   runExceptT
     . flip execStateT emptyDependencies
     . extractDependencies'
     . Dhall.denote
 
-extractDependencies' ::
-  forall (m :: Type -> Type).
-  ( MonadState SpagoDependencies m
-  , MonadError SpagoDependencyError m
-  ) =>
-  Dhall.Expr Void Dhall.Import ->
-  m ()
+extractDependencies'
+  :: forall (m :: Type -> Type)
+   . ( MonadState SpagoDependencies m
+     , MonadError SpagoDependencyError m
+     )
+  => Dhall.Expr Void Dhall.Import
+  -> m ()
 extractDependencies' = \case
   Dhall.Let (Dhall.Binding {Dhall.value = v}) expr ->
     extractDependencies' v *> extractDependencies' expr
@@ -148,34 +149,35 @@ extractDependencies' = \case
       #additions . at name ?= addition
   _ -> pure ()
 
-getAdditionInfo ::
-  forall (m :: Type -> Type).
-  MonadError SpagoDependencyError m =>
-  Dhall.RecordField Void Dhall.Import ->
-  m SpagoAddition
+getAdditionInfo
+  :: forall (m :: Type -> Type)
+   . MonadError SpagoDependencyError m
+  => Dhall.RecordField Void Dhall.Import
+  -> m SpagoAddition
 getAdditionInfo (Dhall.RecordField {Dhall.recordFieldValue = v}) = case v of
   Dhall.RecordLit m ->
     SpagoAddition
-      <$> lookupField "repo" <*> lookupField "version"
-    where
-      lookupField :: Text -> m Text
-      lookupField =
-        getFieldValue
-          <=< maybe (throwError MissingRecordField) pure
-            . flip Dhall.Map.lookup m
+      <$> lookupField "repo"
+      <*> lookupField "version"
+   where
+    lookupField :: Text -> m Text
+    lookupField =
+      getFieldValue
+        <=< maybe (throwError MissingRecordField) pure
+          . flip Dhall.Map.lookup m
 
-      getFieldValue :: Dhall.RecordField Void Dhall.Import -> m Text
-      getFieldValue (Dhall.RecordField {Dhall.recordFieldValue = v'}) =
-        case v' of
-          Dhall.TextLit (Dhall.Chunks [] t) -> pure t
-          _ -> throwError UnsupportedRecord
+    getFieldValue :: Dhall.RecordField Void Dhall.Import -> m Text
+    getFieldValue (Dhall.RecordField {Dhall.recordFieldValue = v'}) =
+      case v' of
+        Dhall.TextLit (Dhall.Chunks [] t) -> pure t
+        _ -> throwError UnsupportedRecord
   _ -> throwError UnsupportedRecord
 
-getRemotePath ::
-  forall (m :: Type -> Type).
-  MonadError SpagoDependencyError m =>
-  Dhall.URL ->
-  m Text
+getRemotePath
+  :: forall (m :: Type -> Type)
+   . MonadError SpagoDependencyError m
+  => Dhall.URL
+  -> m Text
 -- We only care about the last part of the remote URL, e.g. `psc-0.14.5-20211116`
 -- (`Directory.components` lists them backwards)
 getRemotePath

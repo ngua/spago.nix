@@ -6,16 +6,16 @@
 -- action is basically a collection of various hacks, but since this is not
 -- user-facing in any way, that's OK. This is easier than trying to write the
 -- equivalent in Bash or Nix
-module Upstreams (
-  generateUpstreamIO,
-) where
+module Upstreams
+  ( generateUpstreamIO
+  ) where
 
 import Control.Concurrent.Async qualified as Async
 import Control.Lens ((^.))
-import Control.Monad.Error.Class (
-  MonadError (throwError),
-  liftEither,
- )
+import Control.Monad.Error.Class
+  ( MonadError (throwError)
+  , liftEither
+  )
 import Data.Aeson ((.:))
 import Data.Aeson qualified as Aeson
 import Data.Bifunctor (bimap, first)
@@ -34,15 +34,15 @@ import Prettyprinter qualified
 import Prettyprinter.Util qualified
 import System.Exit (ExitCode (ExitFailure, ExitSuccess))
 import System.Process.Typed qualified as Process.Typed
-import Types (
-  NixExpr (
-    NixAttrSet,
-    NixFunApp
-  ),
-  nixAttrSet,
-  nixString,
-  prettyNixExpr,
- )
+import Types
+  ( NixExpr
+      ( NixAttrSet
+      , NixFunApp
+      )
+  , nixAttrSet
+  , nixString
+  , prettyNixExpr
+  )
 
 generateUpstreamIO :: FilePath -> IO ()
 generateUpstreamIO path = do
@@ -58,10 +58,10 @@ generateUpstreamIO path = do
       , nix
       ]
 
-toDrvs ::
-  forall (ann :: Type).
-  Dhall.Expr Void Dhall.Import ->
-  IO (Prettyprinter.Doc ann)
+toDrvs
+  :: forall (ann :: Type)
+   . Dhall.Expr Void Dhall.Import
+  -> IO (Prettyprinter.Doc ann)
 toDrvs =
   fmap (prettyNixExpr . NixAttrSet . mconcat) . \case
     Dhall.RecordLit pkgs ->
@@ -83,7 +83,8 @@ toDrvs =
                       ]
                   )
             p <-
-              liftEither . first userError
+              liftEither
+                . first userError
                 . Aeson.eitherDecode @NixPrefetched
                 $ prefetched
 
@@ -111,12 +112,12 @@ toDrvs =
                 ]
           expr -> throwOnExpr expr
     expr -> throwOnExpr expr
-  where
-    lookupOrThrow :: Text -> Dhall.Map.Map Text a -> IO a
-    lookupOrThrow k = maybe (throwOnMissingKey k) pure . Dhall.Map.lookup k
+ where
+  lookupOrThrow :: Text -> Dhall.Map.Map Text a -> IO a
+  lookupOrThrow k = maybe (throwOnMissingKey k) pure . Dhall.Map.lookup k
 
-    throwOnMissingKey :: forall (a :: Type). Text -> IO a
-    throwOnMissingKey = throwUserError . ("Missing key: " <>) . (^. unpacked)
+  throwOnMissingKey :: forall (a :: Type). Text -> IO a
+  throwOnMissingKey = throwUserError . ("Missing key: " <>) . (^. unpacked)
 
 extractText :: Dhall.RecordField Void Dhall.Import -> IO Text
 extractText fld = case fld.recordFieldValue of
@@ -125,13 +126,13 @@ extractText fld = case fld.recordFieldValue of
 
 checkExitCode :: (ExitCode, Lazy.Char8.ByteString) -> IO Lazy.Char8.ByteString
 checkExitCode = uncurry check . swap
-  where
-    check :: Lazy.Char8.ByteString -> ExitCode -> IO Lazy.Char8.ByteString
-    check stdout = \case
-      ExitFailure code ->
-        throwError . userError $
-          "Process failed with " <> show code
-      ExitSuccess -> pure stdout
+ where
+  check :: Lazy.Char8.ByteString -> ExitCode -> IO Lazy.Char8.ByteString
+  check stdout = \case
+    ExitFailure code ->
+      throwError . userError $
+        "Process failed with " <> show code
+    ExitSuccess -> pure stdout
 
 throwOnExpr :: forall (a :: Type). Dhall.Expr Void Dhall.Import -> IO a
 throwOnExpr = throwUserError . ("Unsupported Dhall `Expr`: " <>) . show

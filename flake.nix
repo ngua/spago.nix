@@ -4,19 +4,21 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    treefmt-nix.url = "github:numtide/treefmt-nix";
     easy-purescript-nix = {
       url = "github:justinwoo/easy-purescript-nix";
       flake = false;
     };
   };
 
-  outputs = { self, nixpkgs, flake-parts, ... }@inputs:
+  outputs = { self, nixpkgs, flake-parts, treefmt-nix, ... }@inputs:
     let
     in
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = nixpkgs.lib.systems.flakeExposed;
       imports = [
         flake-parts.flakeModules.easyOverlay
+        treefmt-nix.flakeModule
       ];
 
       perSystem = { config, pkgs, lib, system, ... }:
@@ -39,7 +41,7 @@
             in
             p.overrideAttrs (_: { passthru = { inherit compiler; }; });
         in
-        {
+        rec {
           packages = rec {
             default = mkHsProject { };
             "${hsProjectName}" = default;
@@ -90,6 +92,22 @@
                 };
               in
               hsp;
+          };
+
+          formatter = treefmt-nix.lib.mkWrapper pkgs treefmt.config;
+
+          treefmt.config = {
+            projectRootFile = "flake.nix";
+            settings.global.excludes = [ "package-sets/**/*.nix" ];
+            programs = {
+              nixpkgs-fmt = {
+                enable = true;
+              };
+              ormolu = {
+                enable = true;
+                package = pkgs.haskellPackages.fourmolu;
+              };
+            };
           };
 
           overlayAttrs = {

@@ -1,31 +1,31 @@
 {-# LANGUAGE LambdaCase #-}
 
-module Types (
-  Options (ExtractDependencies, GenerateUpstream),
-  NixExpr (NixAttrSet, NixList, NixString, NixFunApp),
-  NixStringLineSpan (Multi, Single),
-  SpagoAddition (SpagoAddition, repo, version),
-  SpagoImport (SpagoImport, path, sha256),
-  SpagoDependencies (
-    SpagoDependencies,
-    imports,
-    additions,
-    additionsDhall
-  ),
-  SpagoDependencyError (
-    MissingUpstream,
-    MissingImportHash,
-    MissingRecordField,
-    ExtraRecordField,
-    UnsupportedRecord,
-    UnsupportedRemoteImport
-  ),
-  emptyDependencies,
-  prettyNixExpr,
-  options,
-  nixString,
-  nixAttrSet,
-) where
+module Types
+  ( Options (ExtractDependencies, GenerateUpstream)
+  , NixExpr (NixAttrSet, NixList, NixString, NixFunApp)
+  , NixStringLineSpan (Multi, Single)
+  , SpagoAddition (SpagoAddition, repo, version)
+  , SpagoImport (SpagoImport, path, sha256)
+  , SpagoDependencies
+    ( SpagoDependencies
+    , imports
+    , additions
+    , additionsDhall
+    )
+  , SpagoDependencyError
+    ( MissingUpstream
+    , MissingImportHash
+    , MissingRecordField
+    , ExtraRecordField
+    , UnsupportedRecord
+    , UnsupportedRemoteImport
+    )
+  , emptyDependencies
+  , prettyNixExpr
+  , options
+  , nixString
+  , nixAttrSet
+  ) where
 
 import Control.Exception (Exception (displayException))
 import Data.Generics.Labels ()
@@ -167,19 +167,19 @@ prettyNixExpr = \case
       ]
   NixList nexprs -> prettyElems ("[", "]") prettyNixExpr $ toList nexprs
   NixAttrSet attrs -> prettyElems ("{", "}") f $ Map.toList attrs
-    where
-      f :: (Text, NixExpr) -> Prettyprinter.Doc ann
-      f (k, nexpr) =
-        qtext k -- It's safer to always quote the text
-          <+> Prettyprinter.equals
-          <+> prettyNixExpr nexpr <> Prettyprinter.semi
+   where
+    f :: (Text, NixExpr) -> Prettyprinter.Doc ann
+    f (k, nexpr) =
+      qtext k -- It's safer to always quote the text
+        <+> Prettyprinter.equals
+        <+> prettyNixExpr nexpr <> Prettyprinter.semi
 
-prettyElems ::
-  forall (a :: Type) (ann :: Type).
-  (Prettyprinter.Doc ann, Prettyprinter.Doc ann) ->
-  (a -> Prettyprinter.Doc ann) ->
-  [a] ->
-  Prettyprinter.Doc ann
+prettyElems
+  :: forall (a :: Type) (ann :: Type)
+   . (Prettyprinter.Doc ann, Prettyprinter.Doc ann)
+  -> (a -> Prettyprinter.Doc ann)
+  -> [a]
+  -> Prettyprinter.Doc ann
 prettyElems (open, close) f xs =
   Prettyprinter.sep
     [ Prettyprinter.nest 2 . Prettyprinter.sep $ open : (f <$> xs)

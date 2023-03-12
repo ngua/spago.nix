@@ -1,9 +1,14 @@
 indentation: 2
+function-arrows: leading
 comma-style: leading
+import-export-style: leading
+indent-wheres: false
 record-brace-space: true
-indent-wheres: true
-friendly-import-export: false
-import-export-style: trailing
-respectful: true
-haddock-style: multi-line
 newlines-between-decls: 1
+haddock-style: multi-line
+haddock-style-module:
+let-style: auto
+in-style: right-align
+respectful: true
+fixities: []
+unicode: never
