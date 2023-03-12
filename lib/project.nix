@@ -630,14 +630,19 @@ let
       shellHook =
         let
           modules = args.nodeModules or nodeModules;
+          modulesDest = "$PWD/node_modules";
+          lnModules = ''ln -s ${modules}/lib/node_modules "${modulesDest}"'';
         in
         ''
           ${lib.optionalString packageLockOnly "export NPM_CONFIG_PACKAGE_LOCK_ONLY=true"}
 
-          if [[ ! -d "$PWD/node_modules" ]]; then
-              ln -s ${modules}/lib/node_modules "$PWD/node_modules"
-          else
+          if [[ -L "${modulesDest}" ]]; then
+              rm "${modulesDest}"
+              ${lnModules}
+          elif [[ -d "${modulesDest}" ]]; then
               echo 'spago.nix: Refusing to overwrite existing node_modules'
+          else
+              ${lnModules}
           fi
           export PATH="${modules}/bin:$PATH"
         ''
