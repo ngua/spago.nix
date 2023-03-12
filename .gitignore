@@ -5,7 +5,6 @@ dist-*
 *.prof
 *.aux
 *.hp
-.envrc
 .direnv
 **/.spago
 **/output/
