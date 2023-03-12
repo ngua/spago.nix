@@ -31,7 +31,10 @@
             let
               p = pkgs.haskell.packages.${compiler}.developPackage {
                 inherit modifier returnShellEnv;
-                root = self + /${hsProjectName};
+                root = builtins.path {
+                  name = "${hsProjectName}-src";
+                  path = self + /${hsProjectName};
+                };
               };
             in
             p.overrideAttrs (_: { passthru = { inherit compiler; }; });
@@ -40,6 +43,25 @@
           packages = rec {
             default = mkHsProject { };
             "${hsProjectName}" = default;
+          };
+
+          apps = {
+            generate-package-sets =
+              let
+                name = "generate-package-sets";
+                script = pkgs.writeShellApplication {
+                  inherit name;
+                  runtimeInputs = [
+                    pkgs.wget
+                    self.packages.${system}.${hsProjectName}
+                  ];
+                  text = builtins.readFile ./generate.sh;
+                };
+              in
+              {
+                type = "app";
+                program = "${script}/bin/${name}";
+              };
           };
 
           devShells = {

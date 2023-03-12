@@ -1,4 +1,8 @@
-#!/usr/bin/env bash
+# shellcheck disable=SC2148
+# NOTE
+# This script is meant to be run with `nix run .#generate-package-sets`
+# It is intentionally lacking a shebang -- this will be set by Nix. It's not
+# written inline in the flake in order to avoid nasty escaping
 
 # TODO
 # Enable the rest of these after more testing
@@ -89,31 +93,31 @@ declare upstreams=(
     # psc-0.14.2-20210622
     # psc-0.14.2-20210613
     # psc-0.14.2
-    # psc-0.14.1-20210613
-    # psc-0.14.1-20210516
-    # psc-0.14.1-20210506
-    # psc-0.14.1-20210429
-    # psc-0.14.1-20210427
-    # psc-0.14.1-20210419
-    # psc-0.14.0-20210409
-    # psc-0.14.0-20210406
-    # psc-0.14.0-20210405
-    # psc-0.14.0-20210402
-    # psc-0.14.0-20210401
-    # psc-0.14.0-20210331
-    # psc-0.14.0-20210329
-    # psc-0.14.0-20210324
-    # psc-0.14.0-20210318
-    # psc-0.14.0-20210317
-    # psc-0.14.0-20210315
-    # psc-0.14.0-20210313
-    # psc-0.14.0-20210311
-    # psc-0.14.0-20210309
-    # psc-0.14.0-20210308
-    # psc-0.14.0-20210307
-    # psc-0.14.0-20210304
-    # psc-0.14.0-20210302
-    # psc-0.14.0
+    psc-0.14.1-20210613
+    psc-0.14.1-20210516
+    psc-0.14.1-20210506
+    psc-0.14.1-20210429
+    psc-0.14.1-20210427
+    psc-0.14.1-20210419
+    psc-0.14.0-20210409
+    psc-0.14.0-20210406
+    psc-0.14.0-20210405
+    psc-0.14.0-20210402
+    psc-0.14.0-20210401
+    psc-0.14.0-20210331
+    psc-0.14.0-20210329
+    psc-0.14.0-20210324
+    psc-0.14.0-20210318
+    psc-0.14.0-20210317
+    psc-0.14.0-20210315
+    psc-0.14.0-20210313
+    psc-0.14.0-20210311
+    psc-0.14.0-20210309
+    psc-0.14.0-20210308
+    psc-0.14.0-20210307
+    psc-0.14.0-20210304
+    psc-0.14.0-20210302
+    psc-0.14.0
 )
 
 mkdir -p package-sets
@@ -134,5 +138,7 @@ for i in "${!upstreams[@]}"; do
         echo -n "[$idx / $len] Creating $path..."
         pure-spago-nix generate "$dhallpath" >"$nixpath"
         echo " done"
+    else
+        echo "$path already exists, skipping ..."
     fi
 done
