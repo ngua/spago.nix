@@ -57,10 +57,13 @@
               let
                 name = "check-examples";
                 check = loc:
+                  # Uses `path:...` to avoid implicitly passing `git+file:...`
+                  # with `self`
                   ''
+                    snix="$PWD"
                     pushd ${loc}
                     nix build -L .#checks.${system}.combined \
-                      --no-link --override-input spago-nix ${self}
+                      --no-link --override-input spago-nix "path:$snix"
                     popd
                   '';
                 script = pkgs.writeShellApplication {
@@ -69,6 +72,29 @@
                   text = ''
                     ${check "./examples/v0.14"}
                     ${check "./examples/v0.15"}
+                  '';
+                };
+              in
+              {
+                type = "app";
+                program = "${script}/bin/${name}";
+              };
+            update-examples =
+              let
+                name = "update-examples";
+                update = loc:
+                  ''
+                    pushd ${loc}
+                    nix flake lock --update-input spago-nix
+                    popd
+                  '';
+                script = pkgs.writeShellApplication {
+                  inherit name;
+                  runtimeInputs = [ pkgs.nix ];
+                  text = ''
+                    ${update "./examples/v0.14"}
+                    ${update "./examples/v0.15"}
+                    ${update "./examples/simple"}
                   '';
                 };
               in
