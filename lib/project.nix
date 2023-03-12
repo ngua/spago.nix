@@ -355,6 +355,8 @@ let
     , main ? "Main"
       # The file to write to, corresponds to `--to` flag
     , to ? "index.js"
+    , platform ? "browser"
+    , minify ? false
     , ...
     }@args:
       assert lib.assertOneOf "bundle-type" type [ "app" "module" ];
@@ -377,7 +379,7 @@ let
 
           mkdir $out
           spago bundle-${type} --no-build --no-install -m "${main}" \
-            --to $out/${to}
+            --to $out/${to} --platform ${platform} ${lib.optionalString minify "-y"}
         '';
 
   # Bundle a module, corresponding to `spago bundle-module`
