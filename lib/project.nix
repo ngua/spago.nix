@@ -358,15 +358,22 @@ let
     , ...
     }@args:
       assert lib.assertOneOf "bundle-type" type [ "app" "module" ];
+      let
+        modules = args.nodeModules or nodeModules;
+      in
       pkgs.runCommand ''${args.name or "${name}-bundle-${type}"}''
         {
-          nativeBuildInputs = [ output compiler eps.spago pkgs.git ];
+          nativeBuildInputs =
+            [ output compiler eps.spago pkgs.git ]
+            ++ lib.optional (majorVersion >= 15)
+              pkgs.esbuild;
         }
         ''
           ${prepareFakeSpagoEnv}
           cp -r ${output}/* .
           cp -r ${installed} .spago
           chmod -R +rwx .
+          ln -s ${modules}/lib/node_modules ./node_modules
 
           mkdir $out
           spago bundle-${type} --no-build --no-install -m "${main}" \
