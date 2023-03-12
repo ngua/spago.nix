@@ -624,7 +624,12 @@ let
         in
         ''
           ${lib.optionalString packageLockOnly "export NPM_CONFIG_PACKAGE_LOCK_ONLY=true"}
-          ln -s ${modules}/lib/node_modules $PWD/node_modules
+
+          if [[ ! -d "$PWD/node_modules" ]]; then
+              ln -s ${modules}/lib/node_modules "$PWD/node_modules"
+          else
+              echo 'spago.nix: Refusing to overwrite existing node_modules'
+          fi
           export PATH="${modules}/bin:$PATH"
         ''
         +
