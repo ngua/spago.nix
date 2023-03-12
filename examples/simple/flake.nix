@@ -74,6 +74,7 @@
             app = self.packages.${system}.node-app;
           };
         };
+        checks.default = project.runTest { testMain = "Main"; };
       }
     );
 }

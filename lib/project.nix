@@ -99,23 +99,25 @@ let
     packageJson = buildConfig.packageJson or /. + src + "/package.json";
   };
 
+  # Get the second component from the specified upstream package set
+  # e.g. `psc-0.14.5-20211116` -> `0.14.5`, then convert it into a format
+  # suitable for importing from `easy-purescript-nix`
+  compilerVersion =
+    builtins.replaceStrings
+      [ "." ] [ "_" ]
+      (
+        builtins.elemAt
+          (
+            lib.strings.splitString "-" plan.upstream.path
+          )
+          1
+      );
   # Get the correct version of the `purs` compiler
-  compiler =
-    let
-      # Get the second component from the specified upstream package set
-      # e.g. `psc-0.14.5-20211116` -> `0.14.5`, then convert it into a format
-      # suitable for importing from `easy-purescript-nix`
-      version = builtins.replaceStrings
-        [ "." ] [ "_" ]
-        (
-          builtins.elemAt
-            (
-              lib.strings.splitString "-" plan.upstream.path
-            )
-            1
-        );
-    in
-    eps."purs-${version}";
+  compiler = eps."purs-${compilerVersion}";
+  # Get the major version of the `purs` compiler
+  majorVersion = lib.toInt (
+    builtins.elemAt (lib.splitString "_" compilerVersion) 1
+  );
 
   # Get the upstream package set
   upstream = import (../package-sets + "/${plan.upstream.path}")
@@ -389,7 +391,7 @@ let
     }@args:
     bundle ({ inherit main to; type = "app"; } // args);
 
-  callNodeWithArgs = { output, arguments, command, main }:
+  callNodeWithArgs = { arguments, command, main }:
     let
       sepSpace = builtins.concatStringsSep " ";
       arguments' =
@@ -397,9 +399,13 @@ let
           ''"$@"''
         else
           sepSpace arguments;
+      nodeCmd =
+        if majorVersion >= 15
+        then '''import("./output/${main}/index.js").then(m => m.main())' ''
+        else '''require("./output/${main}").main()' '';
       nodeArgs = sepSpace [ command arguments' ];
     in
-    ''node -e 'require("./output/${main}").main()' ${nodeArgs}'';
+    "node -e ${nodeCmd} ${nodeArgs}";
 
   nameFromMain = main: builtins.replaceStrings [ "." ] [ "-" ]
     (lib.strings.toLower main);
@@ -419,15 +425,16 @@ let
       (
         {
           buildInputs = [ nodejs output ] ++ args.buildInputs or [ ];
-          NODE_PATH = "${nodeModules}/lib/node_modules";
         }
         // env
       )
       # Since the project has already been built entirely, we can just use
       # Node directly to run the application
       ''
-        cd ${output}
-        ${callNodeWithArgs { inherit output arguments command; main = testMain; }}
+        cp -r ${output}/* .
+        chmod -R +rwx .
+        ln -s ${modules}/lib/node_modules ./node_modules
+        ${callNodeWithArgs { inherit arguments command; main = testMain; }}
         touch $out
       '';
 
@@ -475,13 +482,17 @@ let
               )
               env
             );
+          # FIXME
+          # Won't work with ES modules!
         in
         ''
-          export NODE_PATH="${modules}/lib/node_modules"
           ${exportEnv}
-
-          cd ${output}
-          ${callNodeWithArgs { inherit output main arguments command; }}
+          tmp=$(mktemp -p /tmp -d nodeappXXX)
+          cd "$tmp"
+          cp -r ${output}/* .
+          chmod -R +rwx .
+          ln -s ${modules}/lib/node_modules ./node_modules
+          ${callNodeWithArgs { inherit main arguments command; }}
         '';
     };
 
@@ -613,7 +624,7 @@ let
         in
         ''
           ${lib.optionalString packageLockOnly "export NPM_CONFIG_PACKAGE_LOCK_ONLY=true"}
-          export NODE_PATH="${modules}/lib/node_modules"
+          ln -s ${modules}/lib/node_modules $PWD/node_modules
           export PATH="${modules}/bin:$PATH"
         ''
         +

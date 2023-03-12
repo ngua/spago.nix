@@ -10,4 +10,5 @@ dist-*
 **/output/
 **/.psc*
 **/generated-docs/
+**/node_modules
 README.org~
