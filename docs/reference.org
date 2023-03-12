@@ -612,3 +612,5 @@ This is a set returned from the [[#spago-nixspagoproject][ ~spagoProject~ ]] fun
 *** ~apps~
 - ~docs~ ::
   As with ~packages.docs~, this is only added to the ~flake~ if ~withDocs~ is enabled. It builds uses that derivation to serve documentation on ~localhost:8080~. If you do not enable ~withDocs~, then you can use ~spago-nix.utils.apps.fromDocs~ to create a local documentation server with more options
+** ~tools~
+This is a set containing the Purescript packages used to build the project. It will always contain the version of ~purs~ selected for your project as well as ~spago~. If you provide a list of ~tools~ in the ~shell~ argument to ~spagoProject~, it will also contain those (e.g. ~purs-tidy~).

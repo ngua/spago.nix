@@ -699,4 +699,11 @@ rec {
     runTest runTestWithArgs
     nodeApp nodeAppWithArgs
     buildDocs;
+
+  tools = {
+    inherit (eps) spago;
+    purs = compiler;
+  } // builtins.listToAttrs
+    (builtins.map (n: lib.nameValuePair n eps.${n}) (shell.tools or [ ]))
+  ;
 }

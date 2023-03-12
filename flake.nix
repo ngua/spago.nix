@@ -42,6 +42,11 @@
             p.overrideAttrs (_: { passthru = { inherit compiler; }; });
         in
         rec {
+          legacyPackages = import nixpkgs {
+            inherit system;
+            overlays = [ self.overlays.default ];
+          };
+
           packages = rec {
             default = mkHsProject { };
             "${hsProjectName}" = default;
