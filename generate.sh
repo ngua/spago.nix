@@ -130,7 +130,7 @@ for i in "${!upstreams[@]}"; do
             "https://github.com/purescript/package-sets/releases/download/$upstream/packages.dhall" \
             >"$dhallpath"
         nixpath="$path/default.nix"
-        idx=$((1 + $i))
+        idx=$((1 + i))
         echo -n "[$idx / $len] Creating $path..."
         pure-spago-nix generate "$dhallpath" >"$nixpath"
         echo " done"
