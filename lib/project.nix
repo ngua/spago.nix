@@ -69,7 +69,6 @@ let
   packagesDhall = buildConfig.packagesDhall or /. + src + "/packages.dhall";
   spagoDhall = buildConfig.spagoDhall or /. + src + "/spago.dhall";
 
-
   eps = import inputs.easy-purescript-nix { inherit pkgs; };
 
   # Generate the project specification from a `packages.dhall` through the
@@ -118,6 +117,7 @@ let
   majorVersion = lib.toInt (
     builtins.elemAt (lib.splitString "_" compilerVersion) 1
   );
+  isGteV15 = majorVersion >= 15;
 
   # Get the upstream package set
   upstream = import (../package-sets + "/${plan.upstream.path}")
@@ -367,8 +367,7 @@ let
         {
           nativeBuildInputs =
             [ output compiler eps.spago pkgs.git ]
-            ++ lib.optional (majorVersion >= 15)
-              pkgs.esbuild;
+            ++ lib.optional isGteV15 pkgs.esbuild;
         }
         ''
           ${prepareFakeSpagoEnv}
@@ -409,7 +408,7 @@ let
         else
           sepSpace arguments;
       nodeCmd =
-        if majorVersion >= 15
+        if isGteV15
         then '''import("./output/${main}/index.js").then(m => m.main())' ''
         else '''require("./output/${main}").main()' '';
       nodeArgs = sepSpace [ command arguments' ];
@@ -537,17 +536,25 @@ let
         "Command name cannot be empty";
       nodeApp' ({ inherit main env command arguments; } // args);
 
+  # See https://github.com/purescript/spago/issues/949 for why this is necessary.
+  # This only affects the docs search
+  fixDocsSearch = lib.optionalString isGteV15
+    ''
+      cat package.json | jq 'del(.type)' | sponge package.json
+    '';
+
   docsDeps = { format ? "html" }:
     assert lib.assertOneOf "format" format [ "html" "markdown" ];
     pkgs.runCommand
       "${name}-deps-docs"
       {
-        buildInputs = [ compiler eps.spago pkgs.git nodejs ];
+        nativeBuildInputs = [ compiler eps.spago pkgs.git nodejs ];
       }
       ''
         ${prepareFakeSpagoEnv}
 
         cp -r ${installed} .spago
+
         cp ${fakePackagesDhall}/packages.dhall .
         cp ${spagoDhall} ./spago.dhall
         chmod -R +rwx .
@@ -575,22 +582,25 @@ let
             args.name or "${name}-docs"
           )
           {
-            buildInputs = [
+            nativeBuildInputs = [
               compiler
               eps.spago
               pkgs.git
               nodejs
               (docsDeps { inherit format; })
-            ];
+            ]
+            ++ lib.optionals isGteV15 [ pkgs.jq pkgs.moreutils ];
           }
           ''
             ${prepareFakeSpagoEnv}
 
             cp -r ${installed} .spago
+
             cp -r ${src}/* .
             chmod -R +rwx .
             cp ${fakePackagesDhall}/packages.dhall .
             cp ${spagoDhall} ./spago.dhall
+            ${fixDocsSearch}
 
             cp -r ${docsDeps { inherit format; }}/{generated-docs,output} .
             find ./output -exec touch -m -d '01/01/1970' {} +
