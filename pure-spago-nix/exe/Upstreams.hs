@@ -11,7 +11,7 @@ module Upstreams
   ) where
 
 import Control.Concurrent.Async qualified as Async
-import Control.Lens ((^.))
+import Control.Lens (at, non, (^.))
 import Control.Monad.Error.Class
   ( MonadError (throwError)
   , liftEither
@@ -21,7 +21,8 @@ import Data.Aeson qualified as Aeson
 import Data.Bifunctor (bimap, first)
 import Data.ByteString.Lazy.Char8 qualified as Lazy.Char8
 import Data.Kind (Type)
-import Data.Map qualified as Map
+import Data.Map.Strict (Map)
+import Data.Map.Strict qualified as Map
 import Data.Text (Text)
 import Data.Text.IO qualified as Text.IO
 import Data.Text.Lens (unpacked)
@@ -68,7 +69,7 @@ toDrvs =
       Async.forConcurrently (Dhall.Map.toList pkgs) $ \(name, pkg) ->
         case pkg.recordFieldValue of
           Dhall.RecordLit r -> do
-            repo <- extractText =<< lookupOrThrow "repo" r
+            repo <- fmap fixupRepo . extractText =<< lookupOrThrow "repo" r
             version <- extractText =<< lookupOrThrow "version" r
 
             prefetched <-
@@ -150,4 +151,20 @@ data NixPrefetched = NixPrefetched
 
 instance Aeson.FromJSON NixPrefetched where
   parseJSON = Aeson.withObject "NixPrefetched" $ \o ->
-    NixPrefetched <$> (o .: "sha256") <*> (o .: "rev")
+    NixPrefetched <$> o .: "sha256" <*> o .: "rev"
+
+-- Some repos have been transferred, so the original `packages.dhall` may point
+-- to a non-existent or otherwise broken location. Purescript handles this externally
+-- from the Dhall file representing the upstream package set, so we need to replicate
+-- the ability to fetch the transferred repo
+fixupRepo :: Text -> Text
+fixupRepo t = transferred ^. at t . non t
+ where
+  transferred :: Map Text Text
+  transferred =
+    Map.fromList
+      [
+        ( "https://github.com/gbagan/purescript-web-workers.git"
+        , "https://github.com/purescript-web/purescript-web-workers.git"
+        )
+      ]
