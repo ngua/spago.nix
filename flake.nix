@@ -52,33 +52,26 @@
             "${hsProjectName}" = default;
           };
 
-          apps = {
-            check-examples =
+          checks = {
+            projects =
               let
-                name = "check-examples";
-                check = loc:
-                  # Uses `path:...` to avoid implicitly passing `git+file:...`
-                  # with `self`
-                  ''
-                    snix="$PWD"
-                    pushd ${loc}
-                    nix build -L .#checks.${system}.combined \
-                      --no-link --override-input spago-nix "path:$snix"
-                    popd
-                  '';
-                script = pkgs.writeShellApplication {
-                  inherit name;
-                  runtimeInputs = [ pkgs.nix ];
-                  text = ''
-                    ${check "./examples/v0.14"}
-                    ${check "./examples/v0.15"}
-                  '';
+                test = import ./test/project.nix {
+                  pkgs = self.legacyPackages.${system};
                 };
               in
-              {
-                type = "app";
-                program = "${script}/bin/${name}";
-              };
+              pkgs.runCommand "projects-check"
+                {
+                  projects = builtins.concatMap
+                    (x: builtins.attrValues (test.testFor x))
+                    [ ./examples/v0.14 ./examples/v0.15 ];
+                }
+                ''
+                  echo $projects
+                  touch $out
+                '';
+          };
+
+          apps = {
             update-examples =
               let
                 name = "update-examples";
@@ -92,8 +85,6 @@
                   inherit name;
                   runtimeInputs = [ pkgs.nix ];
                   text = ''
-                    ${update "./examples/v0.14"}
-                    ${update "./examples/v0.15"}
                     ${update "./examples/simple"}
                   '';
                 };
