@@ -53,6 +53,29 @@
           };
 
           apps = {
+            check-examples =
+              let
+                name = "check-examples";
+                check = loc:
+                  ''
+                    pushd ${loc}
+                    nix build -L .#checks.${system}.combined \
+                      --no-link --override-input spago-nix ${self}
+                    popd
+                  '';
+                script = pkgs.writeShellApplication {
+                  inherit name;
+                  runtimeInputs = [ pkgs.nix ];
+                  text = ''
+                    ${check "./examples/v0.14"}
+                    ${check "./examples/v0.15"}
+                  '';
+                };
+              in
+              {
+                type = "app";
+                program = "${script}/bin/${name}";
+              };
             generate-package-sets =
               let
                 name = "generate-package-sets";
