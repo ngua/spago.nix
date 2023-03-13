@@ -65,6 +65,7 @@
 }:
 let
   inherit (pkgs) lib;
+
   srcPath = path: builtins.path {
     name = "${path}-src";
     path = "${src}/${path}";
