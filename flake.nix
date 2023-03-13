@@ -35,7 +35,7 @@
                 inherit modifier returnShellEnv;
                 root = builtins.path {
                   name = "${hsProjectName}-src";
-                  path = self + /${hsProjectName};
+                  path = "${self}/${hsProjectName}";
                 };
               };
             in

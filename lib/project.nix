@@ -65,9 +65,13 @@
 }:
 let
   inherit (pkgs) lib;
+  srcPath = path: builtins.path {
+    name = "${path}-src";
+    path = "${src}/${path}";
+  };
 
-  packagesDhall = buildConfig.packagesDhall or /. + src + "/packages.dhall";
-  spagoDhall = buildConfig.spagoDhall or /. + src + "/spago.dhall";
+  packagesDhall = buildConfig.packagesDhall or srcPath "packages.dhall";
+  spagoDhall = buildConfig.spagoDhall or srcPath "spago.dhall";
 
   eps = import inputs.easy-purescript-nix { inherit pkgs; };
 
@@ -94,8 +98,8 @@ let
   nodeModules = utils.js.nodeModulesFor {
     inherit name nodejs;
     development = flags.development or true;
-    packageLock = buildConfig.packageLock or /. + src + "/package-lock.json";
-    packageJson = buildConfig.packageJson or /. + src + "/package.json";
+    packageLock = buildConfig.packageLock or srcPath "package-lock.json";
+    packageJson = buildConfig.packageJson or srcPath "package.json";
   };
 
   # Get the second component from the specified upstream package set
@@ -120,7 +124,7 @@ let
   isGteV15 = majorVersion >= 15;
 
   # Get the upstream package set
-  upstream = import (../package-sets + "/${plan.upstream.path}")
+  upstream = import (../package-sets/${plan.upstream.path})
     { inherit pkgs; };
 
   # This actually fetches the sources for the declared third-party dependencies
@@ -203,7 +207,7 @@ let
       cat <<EOF >additions.dhall
         ${plan.additions-dhall}
       EOF
-      upstream=$(dhall --file ${../package-sets + "/${plan.upstream.path}/packages.dhall"})
+      upstream=$(dhall --file ${../package-sets/${plan.upstream.path}/packages.dhall})
       additions=$(dhall --file ./additions.dhall)
       dhall <<< "$upstream // $additions" > ./packages.dhall
       mkdir $out && mv ./packages.dhall $out
