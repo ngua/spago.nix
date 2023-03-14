@@ -49,27 +49,6 @@ Most of the time, a user's ~spago-packages.nix~ will primarily contain the same 
 * Caveats
 [[file:./docs/how-it-works.org][The docs]] provide a brief overview of how ~spago.nix~ works. There are some consequences to the approach it uses, however, and ~spago.nix~ might not work with your Spago project. ~spago.nix~ is also under heavy development and some of its present limitations may be resolved in the future. In the meantime, the following major caveats apply:
 
-- All upstream package sets and third-party dependencies must be ~let~-bound in your ~packages.dhall~ ::
-  ~spago.nix~ works in part by extracting information from your ~packages.dhall~, without ever fully evaluating the Dhall expression (e.g. no ~import~ statements are ever resolved to avoid network connections). The current approach to extracting this information is rather crude and only scans ~let~ bindings to gather the relevant information. The following format will work with ~spago.nix~:
-  #+begin_src dhall
-  -- This is extracted as the upstream package set (regardless of the name)
-  let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.x.x/packages.dhall
-          sha256:0000000000000000000000000000000000000000000000000000000000000000
-  -- Any subsequent `let`-bound records are interpreted as additional (third-party)
-  -- dependencies
-  let additions =
-      { foo =
-          { dependencies = [ "prelude" ]
-          , repo = "https://github.com/.../foo.git"
-          , version = "v0.0.0"
-          }
-      }
-
-  in upstream // additions
-  #+end_src
-  Whereas specifying overrides and additional dependencies using ~with~ statements will not currently work, although this should hopefully be implemented soon.
-
 - No custom package sets can be used with ~import~ statements in ~packages.dhall~ ::
   If you ~import~ a third-party Dhall package set (for example, a common set of dependencies to reduce repetition in different ~packages.dhall~ with the same dependencies), ~spago.nix~ will not work properly. The import will be extracted, but ignored. For example:
   #+begin_src dhall

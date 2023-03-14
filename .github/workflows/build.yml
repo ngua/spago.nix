@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - "main"
+      - "master"
   pull_request:
     branches:
-      - "main"
+      - "master"
 
 jobs:
   build:
@@ -18,4 +18,5 @@ jobs:
         with:
           install_url: https://releases.nixos.org/nix/nix-2.13.3/install
       - run: |
+          nix build -L .#checks.x86_64-linux.treefmt
           nix build -L .#checks.x86_64-linux.projects

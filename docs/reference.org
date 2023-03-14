@@ -27,6 +27,7 @@
     - [[#devshells][ ~devShells~ ]]
     - [[#packages][ ~packages~ ]]
     - [[#apps][ ~apps~ ]]
+  - [[#tools][ ~tools~ ]]
 
 * Top-level attributes
 ** ~spago-nix.spagoProject~

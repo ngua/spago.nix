@@ -153,11 +153,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1678704820,
-        "narHash": "sha256-hhK0jhHpra0vc1NLGJzPYkFaL+LeumTEGnkJbmr/K/o=",
+        "lastModified": 1678768303,
+        "narHash": "sha256-oWbR4KNzJ4suOx+kOXsG+/KoWyBwUoHgMzsWjhItVlI=",
         "owner": "ngua",
         "repo": "spago.nix",
-        "rev": "99aab1eb08e0a62dc647fe3f1a9a689ffd22596a",
+        "rev": "aed5b9f8341a8adc44607dce7fceaabcb576131e",
         "type": "github"
       },
       "original": {
