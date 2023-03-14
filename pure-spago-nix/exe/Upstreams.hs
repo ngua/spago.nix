@@ -25,7 +25,7 @@ import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
 import Data.Text (Text)
 import Data.Text.IO qualified as Text.IO
-import Data.Text.Lens (unpacked)
+import Data.Text.Lens
 import Data.Tuple (swap)
 import Data.Void (Void)
 import Dhall.Core qualified as Dhall

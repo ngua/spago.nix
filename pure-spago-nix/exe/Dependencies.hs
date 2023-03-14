@@ -14,7 +14,6 @@ import Control.Exception (Exception (displayException), IOException)
 import Control.Lens
   ( at
   , (%=)
-  , (.=)
   , (?=)
   , (^.)
   , (^?)
@@ -29,11 +28,13 @@ import Control.Monad.Except
 import Control.Monad.State.Strict (MonadState, execStateT)
 import Data.Bifunctor (first)
 import Data.Kind (Type)
+import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Sequence ((|>))
 import Data.Text (Text)
-import Data.Text.IO qualified
-import Data.Text.Lens (packed)
+import Data.Text.IO qualified as Text.IO
+import Data.Text.Lens
 import Data.Void (Void)
+import Dhall.Core (WithComponent (WithLabel))
 import Dhall.Core qualified as Dhall
 import Dhall.Crypto qualified
 import Dhall.Map qualified
@@ -67,7 +68,7 @@ extractDependenciesIO =
     <=< liftEither
       . first (userError . show)
       . Dhall.Parser.exprFromText "(spago-dependencies)"
-    <=< Data.Text.IO.readFile
+    <=< Text.IO.readFile
  where
   toIOException :: forall (a :: Type). Exception a => a -> IOException
   toIOException = userError . displayException
@@ -89,7 +90,10 @@ dependenciesToNix deps = do
     nixAttrSet
       [ ("upstream", upstreamToAttrSet upstream)
       , ("additions", NixAttrSet $ additionToAttrSet <$> deps.additions)
-      , ("additions-dhall", NixString Multi deps.additionsDhall)
+      ,
+        ( "additions-dhall"
+        , NixString Multi . renderExpr $ Dhall.RecordLit deps.additionsDhall
+        )
       ]
  where
   upstreamToAttrSet :: SpagoImport -> NixExpr
@@ -131,47 +135,69 @@ extractDependencies'
 extractDependencies' = \case
   Dhall.Let (Dhall.Binding {Dhall.value = v}) expr ->
     extractDependencies' v *> extractDependencies' expr
+  Dhall.With expr (WithLabel name :| _) (Dhall.RecordLit r) -> do
+    extractDependencies' expr
+    (#additions . at name ?=) =<< getAdditionInfo r
+    #additionsDhall %= addDhallAddition name r
   Dhall.Embed
     (Dhall.Import (Dhall.ImportHashed msha256 (Dhall.Remote remote)) _) -> do
       sha256 <- maybe (throwError MissingImportHash) pure msha256
       path <- getRemotePath remote
       #imports %= (|> SpagoImport {sha256, path})
   Dhall.Embed (Dhall.Import {}) -> throwError UnsupportedRemoteImport
-  r@(Dhall.RecordLit m) -> do
-    #additionsDhall
-      .= Prettyprinter.Render.Text.renderStrict
-        ( Prettyprinter.layoutPretty
-            Prettyprinter.defaultLayoutOptions
-            $ Dhall.Pretty.prettyExpr r
-        )
-    void . flip Dhall.Map.traverseWithKey m $ \name record -> do
-      addition <- getAdditionInfo record
-      #additions . at name ?= addition
+  Dhall.RecordLit m -> do
+    void . flip Dhall.Map.traverseWithKey m $ \name r ->
+      getNestedRecordList r >>= \nr -> do
+        (#additions . at name ?=) =<< getAdditionInfo nr
+        #additionsDhall %= addDhallAddition name nr
   _ -> pure ()
+
+addDhallAddition
+  :: Text
+  -> Dhall.Map.Map Text (Dhall.RecordField Void Dhall.Import)
+  -> Dhall.Map.Map Text (Dhall.RecordField Void Dhall.Import)
+  -> Dhall.Map.Map Text (Dhall.RecordField Void Dhall.Import)
+addDhallAddition name r =
+  Dhall.Map.insert
+    name
+    (Dhall.RecordField Nothing (Dhall.RecordLit r) Nothing Nothing)
+
+renderExpr :: Dhall.Expr Void Dhall.Import -> Text
+renderExpr =
+  Prettyprinter.Render.Text.renderStrict
+    . Prettyprinter.layoutPretty Prettyprinter.defaultLayoutOptions
+    . Dhall.Pretty.prettyExpr
+
+getNestedRecordList
+  :: forall (m :: Type -> Type)
+   . MonadError SpagoDependencyError m
+  => Dhall.RecordField Void Dhall.Import
+  -> m (Dhall.Map.Map Text (Dhall.RecordField Void Dhall.Import))
+getNestedRecordList = \case
+  Dhall.RecordField _ (Dhall.RecordLit m) _ _ -> pure m
+  _ -> throwError UnsupportedRecord
 
 getAdditionInfo
   :: forall (m :: Type -> Type)
    . MonadError SpagoDependencyError m
-  => Dhall.RecordField Void Dhall.Import
+  => Dhall.Map.Map Text (Dhall.RecordField Void Dhall.Import)
   -> m SpagoAddition
-getAdditionInfo (Dhall.RecordField {Dhall.recordFieldValue = v}) = case v of
-  Dhall.RecordLit m ->
-    SpagoAddition
-      <$> lookupField "repo"
-      <*> lookupField "version"
-   where
-    lookupField :: Text -> m Text
-    lookupField =
-      getFieldValue
-        <=< maybe (throwError MissingRecordField) pure
-          . flip Dhall.Map.lookup m
+getAdditionInfo m =
+  SpagoAddition
+    <$> lookupField "repo"
+    <*> lookupField "version"
+ where
+  lookupField :: Text -> m Text
+  lookupField =
+    getFieldValue
+      <=< maybe (throwError MissingRecordField) pure
+        . flip Dhall.Map.lookup m
 
-    getFieldValue :: Dhall.RecordField Void Dhall.Import -> m Text
-    getFieldValue (Dhall.RecordField {Dhall.recordFieldValue = v'}) =
-      case v' of
-        Dhall.TextLit (Dhall.Chunks [] t) -> pure t
-        _ -> throwError UnsupportedRecord
-  _ -> throwError UnsupportedRecord
+  getFieldValue :: Dhall.RecordField Void Dhall.Import -> m Text
+  getFieldValue (Dhall.RecordField {Dhall.recordFieldValue = v'}) =
+    case v' of
+      Dhall.TextLit (Dhall.Chunks [] t) -> pure t
+      _ -> throwError UnsupportedRecord
 
 getRemotePath
   :: forall (m :: Type -> Type)

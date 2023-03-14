@@ -40,3 +40,4 @@ executable pure-spago-nix
     , text
     , transformers
     , typed-process
+    , pretty-simple

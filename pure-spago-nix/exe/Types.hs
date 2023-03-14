@@ -34,7 +34,10 @@ import Data.Map qualified as Map
 import Data.Map.Strict (Map)
 import Data.Sequence (Seq)
 import Data.Text (Text)
+import Data.Void (Void)
+import Dhall.Core qualified as Dhall
 import Dhall.Crypto (SHA256Digest)
+import Dhall.Map qualified
 import GHC.Exts (toList)
 import GHC.Generics (Generic)
 import Options.Applicative qualified as Options
@@ -110,7 +113,7 @@ instance Exception SpagoDependencyError where
 data SpagoDependencies = SpagoDependencies
   { imports :: Seq SpagoImport
   , additions :: Map Text SpagoAddition
-  , additionsDhall :: Text
+  , additionsDhall :: Dhall.Map.Map Text (Dhall.RecordField Void Dhall.Import)
   -- ^ The actual Dhall expression containing the additional dependencies; this
   -- is needed to use `spago` to list the exact dependencies
   }

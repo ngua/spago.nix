@@ -1,0 +1,10 @@
+{
+  "name": "spago-nix-simple-example",
+  "type": "module",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "dependencies": {
+    "big-integer": "1.6.51"
+  }
+}

@@ -63,7 +63,11 @@
                 {
                   projects = builtins.concatMap
                     (x: builtins.attrValues (test.testFor x))
-                    [ ./examples/v0.14 ./examples/v0.15 ];
+                    [
+                      ./examples/v0.14
+                      ./examples/v0.15
+                      ./examples/with
+                    ];
                 }
                 ''
                   echo $projects
