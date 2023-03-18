@@ -48,7 +48,7 @@
           # This is used to generate a `devShell`. See `./docs/reference.org` for
           # all of the available options
           shell = {
-            tools = [ "psa" ];
+            tools = [ "psa" "purescript-language-server" ];
           };
         };
       in

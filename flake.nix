@@ -151,8 +151,6 @@
               hsp;
           };
 
-          formatter = treefmt-nix.lib.mkWrapper pkgs treefmt.config;
-
           treefmt.config = {
             projectRootFile = "flake.nix";
             settings.global.excludes = [ "package-sets/**/*.nix" ];
