@@ -634,7 +634,7 @@ let
   mkDevShell =
     {
       # List of Purescript development tools available from
-      # `easy-purescript-nix`
+      # `difficult-purescript-nix`
       tools ? [ ]
       # Extra packages to include in the development environment
     , packages ? [ ]

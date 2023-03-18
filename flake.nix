@@ -11,10 +11,7 @@
   outputs = { self, nixpkgs, flake-parts, treefmt-nix, ... }@inputs:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = nixpkgs.lib.systems.flakeExposed;
-      imports = [
-        flake-parts.flakeModules.easyOverlay
-        treefmt-nix.flakeModule
-      ];
+      imports = [ treefmt-nix.flakeModule ];
 
       perSystem = { config, pkgs, lib, system, ... }:
         let
@@ -164,12 +161,20 @@
               };
             };
           };
-
-          overlayAttrs = {
-            spago-nix = import ./lib/spago.nix {
-              inherit self inputs pkgs;
-            };
-          };
         };
+
+      flake = {
+        overlays.default = nixpkgs.lib.composeManyExtensions [
+          inputs.difficult-purescript-nix.overlays.default
+          (
+            final: _: {
+              spago-nix = import ./lib/spago.nix {
+                inherit self inputs;
+                pkgs = final;
+              };
+            }
+          )
+        ];
+      };
     };
 }
