@@ -68,10 +68,13 @@
                   projects = builtins.concatMap
                     (x: builtins.attrValues (test.testFor x))
                     [
-                      ./test/projects/v0.14
-                      ./test/projects/v0.15
-                      ./test/projects/with
-                      ./test/projects/no-additions
+                      { src = ./test/projects/v0.14; }
+                      { src = ./test/projects/v0.15; }
+                      { src = ./test/projects/with; }
+                      {
+                        src = ./test/projects/no-additions;
+                        addExtraInputs = false;
+                      }
                     ];
                 }
                 ''

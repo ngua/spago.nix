@@ -27,20 +27,25 @@ let
       );
 in
 {
-  testFor = src:
+  testFor = { src, addExtraInputs ? true }:
     let
-      project = pkgs.spago-nix.spagoProject {
-        inherit src;
-        name = "spago-nix-test-${builtins.baseNameOf src}";
-        extraSources = { inherit (extraInputs) lattice properties; };
-        shell = {
-          tools = {
-            psa = { };
-            purescript-language-server = "0.17.1";
-            purs-tidy = "latest";
-          };
-        };
-      };
+      project = pkgs.spago-nix.spagoProject
+        (
+          {
+            inherit src;
+            name = "spago-nix-test-${builtins.baseNameOf src}";
+            shell = {
+              tools = {
+                psa = { };
+                purescript-language-server = "0.17.1";
+                purs-tidy = "latest";
+              };
+            };
+          } // lib.optionalAttrs addExtraInputs {
+            extraSources = { inherit (extraInputs) lattice properties; };
+          }
+        );
+
     in
     {
       inherit (project.flake.packages) output nodeModules docs;
