@@ -46,8 +46,8 @@
           };
 
           packages = rec {
-            default = mkHsProject { };
-            "${hsProjectName}" = default;
+            "${hsProjectName}" = mkHsProject { };
+            default = self.checks.${system}.projects;
           };
 
           checks = {
