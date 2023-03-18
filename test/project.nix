@@ -34,7 +34,11 @@ in
         name = "spago-nix-test-${builtins.baseNameOf src}";
         extraSources = { inherit (extraInputs) lattice properties; };
         shell = {
-          tools = [ "psa" ];
+          tools = {
+            psa = { };
+            purescript-language-server = "0.17.1";
+            purs-tidy = "latest";
+          };
         };
       };
     in

@@ -634,8 +634,9 @@ let
   mkDevShell =
     {
       # List of Purescript development tools available from
-      # `difficult-purescript-nix`
-      tools ? [ ]
+      # `difficult-purescript-nix`, mapped to specific versions numbers or
+      # `latest` for most recent version
+      tools ? { }
       # Extra packages to include in the development environment
     , packages ? [ ]
       # If `true`, the Spago packages will be installed in `./.spago` in
@@ -647,12 +648,11 @@ let
     }@args:
     pkgs.mkShell {
       inherit packages;
-      nativeBuildInputs = [
+      buildInputs = [
         spago
         compiler
         nodejs
-      ]
-      ++ builtins.map (tool: purescriptPackages.${tool}) tools;
+      ] ++ builtins.attrValues (builtins.mapAttrs utils.mkTool tools);
       shellHook =
         let
           modules = args.nodeModules or nodeModules;

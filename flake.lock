@@ -7,11 +7,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1679111175,
-        "narHash": "sha256-gJvKdWs9w1iLsULtc8UUkNVzVCcpENOPgFpTQ2SmNCI=",
+        "lastModified": 1679118979,
+        "narHash": "sha256-GYCEsRAg81mMwCAoEBFi/JNAJ40FqQJjQ7Lx9UX6iHE=",
         "owner": "ngua",
         "repo": "difficult-purescript-nix",
-        "rev": "ce59c32ac97f48722e9667e61bf4c40c69a30c5d",
+        "rev": "0e65fc19256af22573bb76bc2315538dacf2a887",
         "type": "github"
       },
       "original": {

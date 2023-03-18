@@ -14,6 +14,24 @@ rec {
   # it's defined here separately (e.g. the functions can be applied to existing
   # derivations not taken from `spagoProject`)
   utils = {
+    mkTool = tool: v:
+      let
+        getPackage = {
+          set = tool;
+          string = {
+            latest = tool;
+          }.${v} or "${tool}-${pkgs.purescriptPackages.lib.shortVersion v}";
+        }.${builtins.typeOf v};
+      in
+        pkgs.purescriptPackages.${getPackage} or
+          (
+            builtins.throw
+              (
+                "Invalid tool version (${builtins.toString v}) specified for ${tool};"
+                + " pass `latest` or `{ }` for latest version, or version string if"
+                + " the specific version exists in your package set"
+              )
+          );
     apps =
       let
         appHelper = program: {
