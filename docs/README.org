@@ -29,7 +29,7 @@ See the [[#motivation][Motivation]] below for more information on why ~spago.nix
 
 *Example*:
 
-#+INCLUDE: "../examples/simple/flake.nix" src nix
+#+INCLUDE: "../example/flake.nix" src nix
 
 * Motivation
 The status quo for building Purescript projects with Nix is unfortunately quite lackluster. Neither Spago nor its chosen configuration language, Dhall, are particularly amenable to working in pure environments such as the Nix build sandbox. Spago's package format does not include the hashes for declared dependencies, meaning that these must be calculated somehow before fetching the sources for each dependency.

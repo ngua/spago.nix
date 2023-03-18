@@ -9,7 +9,7 @@ let
     let
       exampleLock =
         builtins.fromJSON
-          (builtins.readFile ../examples/simple/flake.lock);
+          (builtins.readFile ../example/flake.lock);
       getInput = x: exampleLock.nodes.${x}.locked;
       fetchExtraInput = x:
         let
