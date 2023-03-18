@@ -198,20 +198,28 @@ let
     cp -r ${cached}/* "$XDG_CACHE_HOME"/spago
     cp ${self}/lib/metadataV1.json "$XDG_CACHE_HOME"/spago
   '';
-  fakePackagesDhall = pkgs.runCommand
-    "fake-packages-dhall"
-    {
-      buildInputs = [ pkgs.dhall ];
-    }
-    ''
-      cat <<EOF >additions.dhall
-        ${plan.additions-dhall}
-      EOF
-      upstream=$(dhall --file ${../package-sets/${plan.upstream.path}/packages.dhall})
-      additions=$(dhall --file ./additions.dhall)
-      dhall <<< "$upstream // $additions" > ./packages.dhall
-      mkdir $out && mv ./packages.dhall $out
-    '';
+  fakePackagesDhall =
+    let
+      additions =
+        if plan.additions-dhall == ""
+        # Empty record value, can be merged with `upstream` record value
+        then "{=}"
+        else plan.additions-dhall;
+    in
+    pkgs.runCommand
+      "fake-packages-dhall"
+      {
+        buildInputs = [ pkgs.dhall ];
+      }
+      ''
+        cat <<EOF >additions.dhall
+          ${additions}
+        EOF
+        upstream=$(dhall --file ${../package-sets/${plan.upstream.path}/packages.dhall})
+        additions=$(dhall --file ./additions.dhall)
+        dhall <<< "$upstream // $additions" > ./packages.dhall
+        mkdir $out && mv ./packages.dhall $out
+      '';
 
   # Unfortunately, we need both of these package sets, and there's a bit
   # of unavoidable waste between them

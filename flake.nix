@@ -74,6 +74,7 @@
                       ./examples/v0.14
                       ./examples/v0.15
                       ./examples/with
+                      ./examples/no-additions
                     ];
                 }
                 ''
