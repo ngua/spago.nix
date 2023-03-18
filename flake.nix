@@ -5,10 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
     treefmt-nix.url = "github:numtide/treefmt-nix";
-    easy-purescript-nix = {
-      url = "github:justinwoo/easy-purescript-nix";
-      flake = false;
-    };
+    difficult-purescript-nix.url = "github:ngua/difficult-purescript-nix";
   };
 
   outputs = { self, nixpkgs, flake-parts, treefmt-nix, ... }@inputs:
@@ -40,10 +37,15 @@
             p.overrideAttrs (_: { passthru = { inherit compiler; }; });
         in
         rec {
-          legacyPackages = import nixpkgs {
+          _module.args.pkgs = import nixpkgs {
             inherit system;
-            overlays = [ self.overlays.default ];
+            overlays = [
+              inputs.difficult-purescript-nix.overlays.default
+              self.overlays.default
+            ];
           };
+
+          legacyPackages = pkgs;
 
           packages = rec {
             "${hsProjectName}" = mkHsProject { };
@@ -62,9 +64,7 @@
               '';
             projects =
               let
-                test = import ./test/project.nix {
-                  pkgs = self.legacyPackages.${system};
-                };
+                test = import ./test/project.nix { inherit pkgs; };
               in
               pkgs.runCommand "projects-check"
                 {
@@ -142,7 +142,7 @@
                           wget
                           nixpkgs-fmt
                           nix-prefetch-git
-                          self.packages.${system}.pure-spago-nix
+                          self.packages.${system}.${hsProjectName}
                         ]
                       )
                   ;

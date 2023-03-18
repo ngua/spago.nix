@@ -255,6 +255,17 @@ Generates ~node_modules~. This is called inside ~spagoProject~ and made availabl
     #+begin_src nix
     pkgs.nodejs-18_x
     #+end_src
+- ~spago~ ::
+  The specific version of ~spago~ to use
+  - Type :: /derivation/
+  - Default ::
+    #+begin_src nix
+    pkgs.purescriptPackages.spago
+    #+end_src
+  - Example ::
+    #+begin_src nix
+    pkgs.purescriptPackages.spago-20_7
+    #+end_src
 - ~development~ ::
   If ~true~, the ~nodeModules~ will contain all ~devDependencies~
   - Type :: /boolean/

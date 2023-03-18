@@ -1,8 +1,11 @@
-{ pkgs, inputs, self, ... }:
+{ pkgs
+, self
+, ...
+}:
 
 rec {
   spagoProject = import ./project.nix {
-    inherit self inputs pkgs utils;
+    inherit self pkgs utils;
   };
 
   # Utilities for generating flake outputs, etc...
