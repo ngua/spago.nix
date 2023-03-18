@@ -48,7 +48,14 @@
           # This is used to generate a `devShell`. See `./docs/reference.org` for
           # all of the available options
           shell = {
-            tools = [ "psa" "purescript-language-server" ];
+            tools = {
+              psa = { };
+              purescript-language-server = "0.17.1";
+              purs-tidy = "latest";
+            };
+            shellHook = ''
+              echo 'Welcome to your spago project!'
+            '';
           };
         };
       in
@@ -66,7 +73,8 @@
           node-app = project.nodeApp { main = "Main"; };
         };
         # Similarly, `flake.apps` contains a `docs` app that serves the documentation
-        # from a webserver on `localhost`
+        # from a webserver on `localhost` (provided that the `withDocs` argument to
+        # `spagoProject` is `true`, its default value)
         apps = project.flake.apps // {
           # `spago-nix.utils` has some helpers for reusing existing `packages`
           # to create `apps`
