@@ -1,4 +1,4 @@
-# Created 2023-03-18 Sat 13:13
+# Created 2023-03-18 Sat 13:28
 #+title: ~spago.nix~
 #+author: Rory Tyler Hayford
 #+export_file_name: ../README.org
@@ -7,6 +7,7 @@
 
 * Table of Contents :toc:
 - [[#introduction][Introduction]]
+  - [[#stability][Stability]]
 - [[#quick-start][Quick Start]]
 - [[#motivation][Motivation]]
 - [[#documentation][Documentation]]
@@ -21,6 +22,9 @@
 - Support for easily generating flakes outputs from Spago projects
 
 See the [[#motivation][Motivation]] below for more information on why ~spago.nix~ was created.
+
+** Stability
+~spago.nix~ is currently fairly experimental -- things may not work correctly for your project and there are almost certainly many edge cases still lurking within. If you find that's the case, please open an issue and I'll do my best to try to fix it!
 
 * Quick Start
 1. Add ~github:ngua/spago-nix~ to your flake input
@@ -156,5 +160,8 @@ Most of the time, a user's ~spago-packages.nix~ will primarily contain the same 
 - Alternate backends aren't supported :: 
      Currently, using alternate Purescript backends is not supported (e.g. [[https://github.com/andyarvanitis/purescript-native][purescript-native]]). This may change in the future, although these backends are generally not up-to-date with ~purs~ itself.
 
+- Spago is going to change dramatically soon :: 
+     The ~spago~ tool itself is currently undergoing a rewrite from Haskell to Purescript. This will require changing a significant part of how ~spago.nix~ works. In particular, since the Spago configuration format has changed from Dhall to YAML, the vast majority, if not all, of ~spago.nix~'s Haskell component will no longer be required. ~spago~'s behavior will certainly change as well, and it will take some time before compatibility with the new version is achieved. Even after that is done, however, I plan on maintaining compatibility with legacy Spago for some time, perhaps under a ~legacySpagoProject~ namespace.
+
 * Acknowledgments
-TODO
+~spago.nix~ was directly inspired by Justin Woo's previous work on [[https://github.com/justinwoo/spago2nix][spago2nix]].
