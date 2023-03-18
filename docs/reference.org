@@ -47,9 +47,24 @@ This is the primary interface to working with ~spago.nix~. It takes a ~src~ cont
   - Default ::
     #+begin_src nix
     {
-      # Purescript development tools, one of
-      # `purs-tidy`, `purty`, `purescript-language-server`, `pscid`
-      tools = [ ];
+      # Purescript development tools, as made available under
+      # `pkgs.purescriptPackages` (this is added by the overlay
+      # from `difficult-purescript-nix`, which is automatically
+      # applied for you when you apply `spago-nix.overlays.default`)
+      #
+      # This argument must be an attribute set, where each name
+      # is mapped to either an empty attribute set (which implies
+      # the latest version of the package), the string `"latest"`,
+      # which implies the same, or a specific version, such as
+      # `"0.16.6"`. Note that if you specify a version, the
+      # `pkgs.purescriptPackages` set must contain the package with
+      # the specified version as a suffix, e.g.:
+      #
+      # `pkgs.purescriptPackages.purescript-language-server-0_16_6`
+      #
+      # Whatever `tools` you specify here are also returned by
+      # `spagoProject`, under the `tools` attribute
+      tools = { };
       # Corresponds to `packages` argument of `pkgs.mkShell`
       packages = [ ];
       # If `true`, the Spago packages will be installed in `./.spago` in
@@ -65,7 +80,11 @@ This is the primary interface to working with ~spago.nix~. It takes a ~src~ cont
   - Example ::
     #+begin_src nix
     {
-      packages = [ "psa" "purs-tidy" "purescript-language-server" ];
+      packages = {
+        psa = { };
+        purs-tidy = "latest";
+        purescript-language-server = "0.16.6";
+      };
       packageLockOnly = false;
       shellHook = ''
         echo 'my shell hook'
