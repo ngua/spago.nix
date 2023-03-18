@@ -12,8 +12,6 @@
   };
 
   outputs = { self, nixpkgs, flake-parts, treefmt-nix, ... }@inputs:
-    let
-    in
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = nixpkgs.lib.systems.flakeExposed;
       imports = [
@@ -53,6 +51,15 @@
           };
 
           checks = {
+            statix = pkgs.runCommand "statix-check"
+              {
+                nativeBuildInputs = [ pkgs.statix ];
+              }
+              ''
+                cd ${self}
+                statix check
+                touch $out
+              '';
             projects =
               let
                 test = import ./test/project.nix {

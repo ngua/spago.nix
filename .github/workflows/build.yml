@@ -19,4 +19,5 @@ jobs:
           install_url: https://releases.nixos.org/nix/nix-2.13.3/install
       - run: |
           nix build -L .#checks.x86_64-linux.treefmt
+          nix build -L .#checks.x86_64-linux.statix
           nix build -L .#checks.x86_64-linux.projects

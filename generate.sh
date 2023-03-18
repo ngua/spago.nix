@@ -4,8 +4,6 @@
 # It is intentionally lacking a shebang -- this will be set by Nix. It's not
 # written inline in the flake in order to avoid nasty escaping
 
-# TODO
-# Enable the rest of these after more testing
 declare upstreams=(
     psc-0.15.4-20220808
     psc-0.15.4-20220805

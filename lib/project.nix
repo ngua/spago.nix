@@ -139,8 +139,7 @@ let
         src = extraSources.${name} or
           (
             pkgs.fetchgit {
-              rev = sha256map.${name}.rev;
-              sha256 = sha256map.${name}.sha256;
+              inherit (sha256map.${name}) rev sha256;
               url = dep.repo;
             }
           );
